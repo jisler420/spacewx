@@ -118,14 +118,14 @@ function auroraLevel(kind,n){
   if(!isFinite(n))return 0;
   if(kind==="g")return n<1?0:n<2?1:n<3?2:3;
   if(kind==="pct")return n<5?0:n<20?1:n<50?2:3;
-  const s=Math.abs(cfg.lat)>=40?1:Math.max(1,Math.min(2.2,1+(40-Math.abs(cfg.lat))/25));
-  if(kind==="kp"||kind==="hp"){const a=3.5*s,b=5*s,c=Math.min(8.7,6.5*s);return n<a?0:n<b?1:n<c?2:3}
-  if(kind==="bz")return n>0?0:n>-5*s?1:n>-10*s?2:3;
-  if(kind==="speed")return n<400+80*(s-1)?0:n<550+100*(s-1)?1:n<700+120*(s-1)?2:3;
-  if(kind==="density")return n<8*s?0:n<15*s?1:n<25*s?2:3;
-  if(kind==="bt")return n<8*s?0:n<15*s?1:n<25*s?2:3;
-  if(kind==="dst")return n>-20*s?0:n>-50*s?1:n>-100*s?2:3;
-  if(kind==="hemi")return n<20*s?0:n<50*s?1:n<100*s?2:3;
+  const a=Math.abs(cfg.lat), t=a>=40?0:a<=25?1:(40-a)/15;
+  if(kind==="kp"||kind==="hp"){const y=3.5+t*3,o=5+t*2.5,r=Math.min(8.7,6.5+t*2.2);return n<y?0:n<o?1:n<r?2:3}
+  if(kind==="bz"){const y=-5-t*15,o=-10-t*30;return n>0?0:n>y?1:n>o?2:3}
+  if(kind==="speed"){const y=400+t*150,o=550+t*200,r=700+t*200;return n<y?0:n<o?1:n<r?2:3}
+  if(kind==="density"){const y=8+t*7,o=15+t*10,r=25+t*15;return n<y?0:n<o?1:n<r?2:3}
+  if(kind==="bt"){const y=8+t*12,o=15+t*20,r=25+t*25;return n<y?0:n<o?1:n<r?2:3}
+  if(kind==="dst"){const y=-20-t*60,o=-50-t*150,r=-100-t*250;return n>y?0:n>o?1:n>r?2:3}
+  if(kind==="hemi"){const y=20+t*60,o=50+t*100,r=100+t*150;return n<y?0:n<o?1:n<r?2:3}
   return 0;
 }
 function tone(el,kind,n){if(!el)return;el.className="tone"+auroraLevel(kind,n)}
