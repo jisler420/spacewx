@@ -302,11 +302,71 @@ let frames=[],fi=0,timer=null;
 function show(n){if(!frames.length)return;fi=(n+frames.length)%frames.length;enlil.src=frames[fi];enlilScrub.value=fi;enlilStamp.textContent=(fi+1)+"/"+frames.length}
 async function loadEnlil(){const html=await settled(ENLIL_DIR);frames=[...String(html||"").matchAll(/href="(enlil_[^"]+\.jpg)"/g)].map(m=>ENLIL_DIR+m[1]);frames=[...new Set(frames)].sort();if(!frames.length){enlil.src=bust(ENLIL_DIR+"latest.jpg");enlilStamp.textContent="latest";return}enlilScrub.max=frames.length-1;enlilScrub.oninput=function(){if(timer){clearInterval(timer);timer=null;enlilPlay.textContent="Play"}show(+enlilScrub.value)};enlilPlay.onclick=function(){if(timer){clearInterval(timer);timer=null;enlilPlay.textContent="Play"}else{enlilPlay.textContent="Pause";timer=setInterval(function(){show(fi+1)},180)}};show(0);enlilPlay.click()}
 function tick(){const n=new Date();utc.textContent="UTC "+n.toISOString().slice(11,19);railUtc.textContent=n.toISOString().slice(11,19)+" UTC";try{const loc=n.toLocaleTimeString("en-US",{timeZone:cfg.tz,hour12:false});local.textContent="Local "+loc;railLocal.textContent=loc+" "+(cfg.tz||"")}catch(e){}placeLabel.textContent=(cfg.place||"")+(cfg.zip?" "+cfg.zip:"")}
-tick();drawEarth();loadWx();loadWindImf();loadHp30();loadImgs();loadAurora();loadEnlil();
-function refreshKpis(){loadWx();loadWindImf();loadHp30();loadAurora()}
+function applyWorkerData(data){
+  if(!data)return;
+  if(data.mag) hapiPack.mag=data.mag;
+  if(data.plasma) hapiPack.plasma=data.plasma;
+  if(data.enlil) hapiPack.enlil=data.enlil;
+  if(data.hp) hapiPack.hp=data.hp;
+  drawWindImf();
+  if(data.kp||data.sc||data.kf||data.dst||data.hemi){
+    const kp=data.kp,sc=data.sc,kf=data.kf,dst=data.dst,hemi=data.hemi;
+    const k=Number((last(kp)||{}).Kp); if(isFinite(k)){vKp.textContent=k.toFixed(1);tone(vKp,"kp",k)}
+    if(Array.isArray(kp)) cache.kp=kp;
+    if(sc&&sc["0"]){const n=sc["0"];vRsg.textContent="R"+(n.R&&n.R.Scale||0)+" S"+(n.S&&n.S.Scale||0)+" G"+(n.G&&n.G.Scale||0);tone(vRsg,"g",Number(n.G&&n.G.Scale||0))}
+    if(Array.isArray(kf)){
+      const by={};
+      kf.forEach(r=>{const t=parseT(r.time_tag);if(!isFinite(t))return;const d=new Date(t);by[d.toISOString().slice(0,10)+"-"+d.getUTCHours()]={kp:r.kp??r.Kp,kind:r.observed||""}});
+      const start=new Date();start.setUTCHours(0,0,0,0);
+      const days=[];
+      for(let i=0;i<3;i++){const day=new Date(start.getTime()+i*86400000);days.push({date:day.toISOString().slice(0,10),label:day.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:"UTC"})})}
+      const nowH=Math.floor(new Date().getUTCHours()/3)*3, nowD=new Date().toISOString().slice(0,10);
+      let html="<table><tr><th>UTC</th>";days.forEach(function(d){html+="<th>"+d.label+"</th>"});html+="</tr>";
+      for(let h=0;h<24;h+=3){
+        html+="<tr><td>"+String(h).padStart(2,"0")+"z</td>";
+        days.forEach(function(d){const s=by[d.date+"-"+h], kv=s&&isFinite(s.kp)?Number(s.kp):NaN;let cls="";if(isFinite(kv)) cls=kv>=7?"kp-7":kv>=5?"kp-5":kv>=4?"kp-4":"kp-g";if(s&&String(s.kind).toLowerCase().indexOf("pred")===0) cls+=" kp-pred";if(d.date===nowD&&h===nowH) cls+=" kp-now";html+="<td class=\""+cls+"\">"+(isFinite(kv)?kv.toFixed(1):"-")+"</td>"});
+        html+="</tr>";
+      }
+      kpForecast.innerHTML=html+"</table>";
+    }
+    if(Array.isArray(dst)){cache.dst=dst.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag));drawDst()}
+    if(hemi){const lines=String(hemi).trim().split(/\n/).filter(l=>l&&!l.startsWith("#")).map(l=>l.trim().split(/\s+/)).filter(p=>p.length>=4);const last3=lines.slice(-3),cur=lines[lines.length-1]||[];const avg=i=>last3.length?last3.reduce((s,p)=>s+(+p[i]||0),0)/last3.length:NaN;vHemi.textContent=(cur[2]||"-")+" / "+(cur[3]||"-")+" GW";vHemiAvg.textContent=(isFinite(avg(2))?Math.round(avg(2)):"-")+" / "+(isFinite(avg(3))?Math.round(avg(3)):"-")+" GW";tone(vHemi,"hemi",Math.max(+cur[2]||0,+cur[3]||0));tone(vHemiAvg,"hemi",Math.max(avg(2)||0,avg(3)||0))}
+    const ok=[kp,sc,kf,dst,hemi].filter(Boolean).length;feedStatus.textContent=ok>=4?"live":ok?"partial":"DOWN";feedStatus.className=ok>=4?"ok":ok?"muted":"down";
+  }
+  if(data.hp30txt){
+    const rows=[];String(data.hp30txt).split(/\n/).forEach(line=>{if(!line||line.startsWith("#"))return;const p=line.trim().split(/\s+/);if(p.length<8)return;const hp=Number(p[7]);if(!isFinite(hp)||hp<0)return;const y=+p[0],mo=+p[1],d=+p[2],h=+p[3];rows.push({time_tag:new Date(Date.UTC(y,mo-1,d,Math.floor(h),Math.round((h%1)*60))).toISOString(),hp30:hp})});
+    if(rows.length){cache.hp30=rows;drawHp30()}
+  }
+  if(data.aurora){
+    const coords=data.aurora.coordinates||data.aurora;
+    if(Array.isArray(coords)){
+      auroraData=paintOvation(coords);
+      let best=0,bestD=1e9;
+      for(let i=0;i<coords.length;i++){const p=coords[i];if(!p||p.length<3)continue;const lon=p[0]>180?p[0]-360:p[0],dd=(p[1]-cfg.lat)*(p[1]-cfg.lat)+(lon-cfg.lon)*(lon-cfg.lon);if(dd<bestD){bestD=dd;best=p[2]}}
+      vAurora.textContent=Math.round(best)+"%";
+      tone(vAurora,"pct",best);
+      mapStatus.textContent="equirectangular Earth · poles + OVATION";
+      drawEarth();
+    }
+  }
+}
+
+tick();drawEarth();loadImgs();loadEnlil();
+let wxWorker=null;
+try{
+  wxWorker=new Worker("spacewx-worker.js");
+  wxWorker.onmessage=function(e){if(e.data&&e.data.type==="update")applyWorkerData(e.data.data)};
+  wxWorker.onerror=function(){if(!wxWorker._fallback){wxWorker._fallback=1;refreshKpis();setInterval(refreshKpis,60000)}};
+}catch(e){
+  loadWx();loadWindImf();loadHp30();loadAurora();
+  setInterval(refreshKpis,60000);
+}
+function refreshKpis(){
+  if(wxWorker){try{wxWorker.postMessage({type:"poll"});return}catch(e){}}
+  loadWx();loadWindImf();loadHp30();loadAurora();
+}
 setInterval(tick,1000);
 setInterval(drawEarth,60000);
-setInterval(refreshKpis,60000);
 setInterval(loadImgs,360000);
 document.addEventListener("visibilitychange",function(){if(!document.hidden)refreshKpis()});
 window.addEventListener("resize",function(){drawEarth();drawAll()});
