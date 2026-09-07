@@ -75,7 +75,7 @@ th:first-child,td:first-child{text-align:left}
     <div class="card"><h2>IMF Bz nT</h2><canvas class="chart" id="bzPlot"></canvas><div class="muted">South favors aurora</div></div>
     <div class="card"><h2>GOES Hp nT</h2><canvas class="chart" id="goesPlot"></canvas><div class="muted" id="goesStatus">Last 2.5 hours</div></div>
     <div class="card"><h2>Dst nT</h2><canvas class="chart" id="dstCanvas"></canvas><div class="muted">Last 2.5 hours</div></div>
-    <div class="card"><h2>Hp30</h2><canvas class="chart" id="hp30Plot"></canvas><div class="muted">GFZ 30-minute index</div></div>
+    <div class="card"><h2>Hp30</h2><canvas class="chart" id="hp30Plot"></canvas><div class="muted">GFZ nowcast file</div></div>
     <div class="card"><h2>Kiruna IRF</h2><img id="kiruna" alt="Kiruna"></div>
     <div class="card"><h2>TGO Europe H</h2><img id="tgo" alt="TGO" referrerpolicy="no-referrer"></div>
     <div class="card"><h2>Hobart BOM</h2><img id="hobart" alt="Hobart"></div>
@@ -197,12 +197,18 @@ async function loadGoes(){
   drawGoes();
 }
 async function loadHp30(){
-  const end=new Date().toISOString().replace(/\.\d{3}Z$/,"Z");
-  const start=new Date(Date.now()-3*864e5).toISOString().replace(/\.\d{3}Z$/,"Z");
-  const j=await settled("https://kp.gfz.de/app/json/?start="+start+"&end="+end+"&index=Hp30&status=all");
-  if(!j||!j.datetime){vHp30.textContent="-";return}
-  cache.hp30=j.datetime.map((t,i)=>({time_tag:t,hp30:j.Hp30[i]}));
-  drawHp30();
+  const txt=await settled("https://kp.gfz.de/fileadmin/files_for_gfz_cms/Hp30_ap30_nowcast.txt");
+  if(!txt){vHp30.textContent="-";return}
+  const rows=[];
+  String(txt).split(/\n/).forEach(line=>{
+    if(!line||line.startsWith("#"))return;
+    const p=line.trim().split(/\s+/); if(p.length<8)return;
+    const hp=Number(p[7]); if(!isFinite(hp)||hp<0)return;
+    const y=+p[0],mo=+p[1],d=+p[2],h=+p[3];
+    const t=Date.UTC(y,mo-1,d,Math.floor(h),Math.round((h%1)*60));
+    rows.push({time_tag:new Date(t).toISOString(),hp30:hp});
+  });
+  cache.hp30=rows; drawHp30();
 }
 function loadImgs(){
   kiruna.src=bust("https://www2.irf.se/maggraphs/kiraver.png");
@@ -212,7 +218,7 @@ function loadImgs(){
 const map=L.map("map",{center:[20,0],zoom:2,minZoom:2,maxZoom:2,zoomControl:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,touchZoom:false,keyboard:false,dragging:false,worldCopyJump:false,maxBounds:[[-85,-180],[85,180]],maxBoundsViscosity:1});
 function sizeMap(){map.invalidateSize();map.setView([20,0],2,{animate:false})}
 sizeMap();requestAnimationFrame(sizeMap);setTimeout(sizeMap,250);
-L.tileLayer("https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",{maxNativeZoom:8,maxZoom:2,noWrap:true}).addTo(map);
+L.tileLayer("https://basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png",{maxZoom:2,noWrap:true}).addTo(map);
 L.circleMarker([cfg.lat,cfg.lon],{radius:7,color:"#fb923c",fillColor:"#fb923c",fillOpacity:1}).addTo(map);
 let nightLayer=null,termLine=null,auroraLayer=null;
 function drawNight(){
@@ -222,8 +228,8 @@ function drawNight(){
   for(let lng=-180;lng<=180;lng+=2){let lat=0,t=Math.tan(decl*rad);if(Math.abs(t)>1e-6)lat=Math.atan(-Math.cos((lng-lngSun)*rad)/t)/rad;line.push([Math.max(-85,Math.min(85,lat)),lng])}
   const night=decl>=0?line.concat([[-85,180],[-85,-180]]):line.concat([[85,180],[85,-180]]);
   if(nightLayer)map.removeLayer(nightLayer);if(termLine)map.removeLayer(termLine);
-  nightLayer=L.polygon(night,{stroke:false,fillColor:"#02040a",fillOpacity:.4,interactive:false}).addTo(map);
-  termLine=L.polyline(line,{color:"#e5e7eb",weight:2,interactive:false}).addTo(map);
+  nightLayer=L.polygon(night,{stroke:false,fillColor:"#000",fillOpacity:.35,interactive:false}).addTo(map);
+  termLine=L.polyline(line,{color:"#cbd5e1",weight:1.5,interactive:false}).addTo(map);
 }
 async function loadAurora(){
   const o=await settled("https://services.swpc.noaa.gov/json/ovation_aurora_latest.json");
@@ -232,15 +238,21 @@ async function loadAurora(){
   if(auroraLayer)map.removeLayer(auroraLayer);
   auroraLayer=L.layerGroup();
   let best=0,bestD=1e9;
+  const byN={}, byS={};
   for(let i=0;i<coords.length;i++){
     const p=coords[i];if(!p||p.length<3)continue;
     const lon=p[0]>180?p[0]-360:p[0];
-    const a=p[1]-cfg.lat,b=lon-cfg.lon,d=a*a+b*b;
-    if(d<bestD){bestD=d;best=p[2]}
-    if(p[2]>=12&&i%8===0){
-      L.circleMarker([p[1],lon],{radius:p[2]>=40?5:3,stroke:false,fillColor:"#22c55e",fillOpacity:Math.min(.45,.12+p[2]/200),interactive:false}).addTo(auroraLayer);
-    }
+    const a=p[1]-cfg.lat,b=lon-cfg.lon,dd=a*a+b*b;
+    if(dd<bestD){bestD=dd;best=p[2]}
+    if(p[2]<15)continue;
+    const key=Math.round(lon/3)*3;
+    if(p[1]>=0) byN[key]=Math.max(byN[key]|| -90, p[1]);
+    else byS[key]=Math.min(byS[key]||90, p[1]);
   }
+  const nRing=Object.keys(byN).map(Number).sort((a,b)=>a-b).map(lon=>[byN[lon],lon]).filter(p=>p[0]>40);
+  const sRing=Object.keys(byS).map(Number).sort((a,b)=>a-b).map(lon=>[byS[lon],lon]).filter(p=>p[0]<-40);
+  if(nRing.length>3) L.polygon(nRing.concat([[88,nRing[nRing.length-1][1]],[88,nRing[0][1]]]),{stroke:false,fillColor:"#22c55e",fillOpacity:.28,interactive:false}).addTo(auroraLayer);
+  if(sRing.length>3) L.polygon(sRing.concat([[-88,sRing[sRing.length-1][1]],[-88,sRing[0][1]]]),{stroke:false,fillColor:"#22c55e",fillOpacity:.28,interactive:false}).addTo(auroraLayer);
   auroraLayer.addTo(map);
   vAurora.textContent=Math.round(best)+"%";
   mapStatus.textContent="whole Earth + night terminator";
