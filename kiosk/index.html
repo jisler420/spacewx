@@ -6,50 +6,84 @@
 <title>SpaceWx</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-:root{--bg:#07090f;--panel:#101526;--line:#2a3558;--text:#e8eefc;--muted:#8b97b8;--bad:#f87171}
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.3 Segoe UI,system-ui,sans-serif;overflow:hidden}
-a{color:#5eead4}
-.app{display:grid;grid-template-rows:118px 1fr;height:100%}
-.top{display:grid;grid-template-columns:240px 1fr 170px;gap:8px;padding:8px}
-.main{display:grid;grid-template-columns:220px 1fr 280px;min-height:0;height:100%}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
-.utc{font-size:40px;font-weight:700}.big{font-size:26px;font-weight:700}.muted{color:var(--muted);font-size:12px}.down{color:var(--bad)}
-#map{height:100%;background:#0a0e18}.left,.right{padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto}
-.nav a{background:#1a2140;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 8px;text-decoration:none;margin-right:6px}
-#tgo{width:100%;background:#fff;border-radius:4px}canvas.na{width:100%;height:220px;display:block;background:#0a0e18}.badge{font-size:11px;color:var(--muted)}
+:root{--bg:#0b0f16;--card:#141a26;--line:#2a3448;--text:#eef3ff;--muted:#8b97b3;--bad:#f87171;--ok:#34d399}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Segoe UI,system-ui,sans-serif}
+a{color:#7dd3fc;text-decoration:none}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 16px;background:#0e1420;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:500}
+.brand{font-weight:700;letter-spacing:.04em}
+nav a{margin-left:12px;padding:4px 10px;border:1px solid var(--line);border-radius:6px}
+.wrap{max-width:1400px;margin:0 auto;padding:12px 16px 32px}
+.kpis{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:12px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.kpi b{display:block;font-size:26px;font-weight:700}
+.kpi span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+#map{height:420px;border-radius:8px;border:1px solid var(--line);background:#071018}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:900px){.row{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px}
+.card h2{margin:0 0 8px;font-size:14px;color:var(--muted);font-weight:600}
+#tgo{width:100%;background:#fff;border-radius:4px;display:block}
+canvas.na{width:100%;height:280px;display:block;background:#0a0e18}
+.down{color:var(--bad)}.ok{color:var(--ok)}.muted{color:var(--muted);font-size:12px}
+#enlil{width:100%;border-radius:4px;display:block;background:#000}
 </style></head>
 <body>
-<div class="app">
-<div class="top">
-<div class="card"><div class="muted">UTC</div><div class="utc" id="utc">--:--:--</div><div class="muted" id="utcDate"></div></div>
-<div class="card"><div class="muted">Kp · SFI · Bz · Dst · Wind</div><div class="big" id="nums">loading</div><div class="badge" id="feedStatus">checking feeds</div></div>
-<div class="card"><div class="muted">R / S / G</div><div class="big" id="rsg">—</div></div>
+<header>
+  <div class="brand">SpaceWx</div>
+  <div class="muted" id="utc">UTC --:--:--</div>
+  <div class="muted" id="local">Local --:--</div>
+  <div class="muted" id="placeLabel">Grand Forks, ND · ZIP 58201</div>
+  <nav><a href="index.html">Live</a><a href="settings.html">Settings</a></nav>
+</header>
+<div class="wrap">
+  <div class="kpis">
+    <div class="kpi"><span>Kp</span><b id="vKp">—</b></div>
+    <div class="kpi"><span>R / S / G</span><b id="vRsg">—</b></div>
+    <div class="kpi"><span>Bz</span><b id="vBz">—</b></div>
+    <div class="kpi"><span>Dst</span><b id="vDst">—</b></div>
+    <div class="kpi"><span>SFI</span><b id="vSfi">—</b></div>
+    <div class="kpi"><span>Wind</span><b id="vWind">—</b></div>
+    <div class="kpi"><span>X-ray</span><b id="vXray">—</b></div>
+    <div class="kpi"><span>Hemi GW</span><b id="vHemi">—</b></div>
+  </div>
+  <div id="map"></div>
+  <div class="muted" id="mapStatus" style="margin:6px 0 0">map</div>
+  <div class="row">
+    <div class="card"><h2>Europe magnetometers · TGO H</h2><img id="tgo" alt="TGO H stackplot" referrerpolicy="no-referrer"><div class="muted" id="tgoStatus">TGO</div></div>
+    <div class="card"><h2>North America magnetometers · USGS X</h2><canvas class="na" id="naPlot"></canvas><div class="muted" id="naStatus">USGS</div></div>
+  </div>
+  <div class="row">
+    <div class="card"><h2>Kp forecast</h2><div id="kpForecast">—</div><div class="muted" id="feedStatus">feeds</div><div class="muted" id="homeAurora">aurora —</div></div>
+    <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="WSA-Enlil"><div class="muted">NOAA SWPC model image</div></div>
+  </div>
 </div>
-<div class="main">
-<div class="left">
-<div class="card"><div class="muted" id="tzLabel">Local</div><div class="big" id="local">--:--</div><div id="placeLabel">Grand Forks, ND</div><div class="muted" id="zipLabel">ZIP 58201</div><div class="muted" id="homeAurora">aurora —</div><div class="nav"><a href="settings.html">Settings</a> <a href="index.html">Live</a></div></div>
-<div class="card"><div class="muted">Kp forecast</div><div id="kpForecast">—</div></div>
-</div>
-<div style="position:relative;min-height:0"><div id="map"></div><div class="muted" id="mapStatus" style="position:absolute;bottom:8px;right:8px;z-index:400;background:#0008;padding:4px 8px;border-radius:6px">map</div></div>
-<div class="right">
-<div class="card"><div class="muted">Europe H · TGO official</div><img id="tgo" alt="TGO H stackplot" referrerpolicy="no-referrer"><div class="badge" id="tgoStatus">TGO</div></div>
-<div class="card"><div class="muted">North America X · USGS</div><canvas class="na" id="naPlot"></canvas><div class="badge" id="naStatus">USGS</div></div>
-</div></div></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const FEEDS={kp:["https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json","https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"],dst:["https://services.swpc.noaa.gov/products/kyoto-dst.json"],sfi:["https://services.swpc.noaa.gov/products/summary/10cm-flux.json"],wind:["https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json"],mag:["https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json"],scales:["https://services.swpc.noaa.gov/products/noaa-scales.json"],aurora:["https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"],kpf:["https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"]};
+const FEEDS={
+  kp:["https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"],
+  dst:["https://services.swpc.noaa.gov/products/kyoto-dst.json"],
+  sfi:["https://services.swpc.noaa.gov/products/summary/10cm-flux.json"],
+  wind:["https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json"],
+  mag:["https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json"],
+  scales:["https://services.swpc.noaa.gov/products/noaa-scales.json"],
+  aurora:["https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"],
+  kpf:["https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"],
+  xray:["https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json","https://services.swpc.noaa.gov/json/goes/secondary/xrays-6-hour.json"],
+  hemi:["https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt"]
+};
 const TGO="https://flux.phys.uit.no/cgi-bin/mkstackplot.cgi?GifOnly&&comp=H&nor=&Sync=";
+const ENLIL="https://services.swpc.noaa.gov/images/animations/enlil/latest.jpg";
 const NA=["BRW","CMO","BOU","FRD"];
 const DEFAULT={zip:"58201",lat:47.901,lon:-97.0446,place:"Grand Forks, ND",tz:"America/Chicago"};
 function loadCfg(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem("spacewx-cfg")||"{}"));}catch(e){return Object.assign({},DEFAULT)}}
 let cfg=loadCfg();
-async function grab(u){const r=await fetch(u,{cache:"no-store"});if(!r.ok)throw new Error(r.status);return r.json()}
+async function grab(u){const r=await fetch(u,{cache:"no-store"});if(!r.ok)throw new Error(r.status);const t=r.headers.get("content-type")||"";if(t.includes("json")||u.endsWith(".json"))return r.json();return r.text()}
 async function first(list){let err;for(const u of list){try{return{data:await grab(u),src:u.split("/").pop()}}catch(e){err=e}}throw err||new Error("down")}
-const last=a=>a&&a[a.length-1];
-function mark(el,cls,t){el.className="badge "+(cls||"");el.textContent=t}
-const map=L.map("map",{worldCopyJump:true,zoomControl:true}).setView([cfg.lat,cfg.lon],3);
+const last=a=>Array.isArray(a)?a[a.length-1]:a;
+function xrayClass(f){f=Number(f);if(!isFinite(f))return "—";if(f>=1e-3)return "X"+(f/1e-3).toFixed(1);if(f>=1e-4)return "M"+(f/1e-4).toFixed(1);if(f>=1e-5)return "C"+(f/1e-5).toFixed(1);if(f>=1e-6)return "B"+(f/1e-6).toFixed(1);return "A"+(f/1e-7).toFixed(1)}
+const map=L.map("map",{worldCopyJump:true}).setView([cfg.lat,cfg.lon],3);
 L.tileLayer("https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",{maxNativeZoom:8,maxZoom:6,attribution:"NASA GIBS"}).addTo(map);
-L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",{maxZoom:6,opacity:0.7,attribution:"Esri"}).addTo(map);
 let pin=L.circleMarker([cfg.lat,cfg.lon],{radius:7,color:"#fb923c",fillColor:"#fb923c",fillOpacity:1}).addTo(map);
 let auroraLayer=null,nightLayer=null,termLine=null,lastNightMin=-1;
 function sunPos(d){
@@ -62,10 +96,9 @@ function sunPos(d){
 function drawNight(){
   const d=new Date(),{decl,lngSun}=sunPos(d),rad=Math.PI/180,line=[];
   for(let lng=-180;lng<=180;lng+=2){
-    let lat=0;
-    const t=Math.tan(decl*rad);
+    let lat=0; const t=Math.tan(decl*rad);
     if(Math.abs(t)>1e-6) lat=Math.atan(-Math.cos((lng-lngSun)*rad)/t)/rad;
-    if(lat>89.9) lat=89.9; if(lat<-89.9) lat=-89.9;
+    if(lat>89.9)lat=89.9; if(lat<-89.9)lat=-89.9;
     line.push([lat,lng]);
   }
   const night=decl>=0?line.concat([[-90,180],[-90,-180]]):line.concat([[90,180],[90,-180]]);
@@ -74,27 +107,43 @@ function drawNight(){
   nightLayer=L.polygon(night,{stroke:false,fillColor:"#02040a",fillOpacity:0.55,interactive:false}).addTo(map);
   termLine=L.polyline(line,{color:"#e5e7eb",weight:2,opacity:0.95,interactive:false}).addTo(map);
 }
-function applyPlace(){placeLabel.textContent=cfg.place||"";zipLabel.textContent="ZIP "+(cfg.zip||"—");tzLabel.textContent="Local · "+cfg.tz;if(pin)map.removeLayer(pin);pin=L.circleMarker([cfg.lat,cfg.lon],{radius:7,color:"#fb923c",fillColor:"#fb923c",fillOpacity:1}).addTo(map)}
-async function refreshWx(){try{const kp=await first(FEEDS.kp),dst=await first(FEEDS.dst),sfi=await first(FEEDS.sfi),mag=await first(FEEDS.mag),wind=await first(FEEDS.wind),sc=await first(FEEDS.scales);
-const k=Number((last(kp.data)||kp.data).Kp);const d=Number((last(dst.data)||{}).dst);const bz=Number((last(mag.data)||mag.data).bz_gsm);const w=Number((last(wind.data)||wind.data).proton_speed);const flux=Number(sfi.data.flux);const n=sc.data["0"]||{};
-rsg.textContent=`R${n.R&&n.R.Scale||"—"} / S${n.S&&n.S.Scale||"—"} / G${n.G&&n.G.Scale||"—"}`;
-nums.textContent=`Kp ${k.toFixed(1)}   SFI ${Math.round(flux)}   Bz ${bz.toFixed(1)}   Dst ${Math.round(d)}   ${Math.round(w)} km/s`;nums.className="big";mark(feedStatus,"","live");
-try{const kf=await first(FEEDS.kpf);const rows=Array.isArray(kf.data)?kf.data.slice(-4):[];kpForecast.textContent=rows.map(r=>`${String(r.time_tag||"").slice(5,13)} ${r.Kp??""}`).join(" · ")||"n/a"}catch(e){kpForecast.textContent="forecast DOWN"}
-}catch(e){nums.className="big down";mark(feedStatus,"down","DOWN "+e)}}
+async function refreshWx(){
+  try{
+    const kp=await first(FEEDS.kp),dst=await first(FEEDS.dst),sfi=await first(FEEDS.sfi),mag=await first(FEEDS.mag),wind=await first(FEEDS.wind),sc=await first(FEEDS.scales);
+    const k=Number((last(kp.data)||{}).Kp);
+    const d=Number((last(dst.data)||{}).dst);
+    const bz=Number((last(mag.data)||mag.data).bz_gsm);
+    const w=Number((last(wind.data)||wind.data).proton_speed);
+    const flux=Number((sfi.data.flux!=null?sfi.data.flux:last(sfi.data)&&last(sfi.data).flux));
+    const n=sc.data["0"]||{};
+    vKp.textContent=isFinite(k)?k.toFixed(1):"—";
+    vRsg.textContent=`R${n.R&&n.R.Scale||"—"} S${n.S&&n.S.Scale||"—"} G${n.G&&n.G.Scale||"—"}`;
+    vBz.textContent=isFinite(bz)?bz.toFixed(1):"—";
+    vDst.textContent=isFinite(d)?Math.round(d):"—";
+    vSfi.textContent=isFinite(flux)?Math.round(flux):"—";
+    vWind.textContent=isFinite(w)?Math.round(w)+" km/s":"—";
+    feedStatus.textContent="live"; feedStatus.className="muted ok";
+  }catch(e){feedStatus.textContent="DOWN "+e; feedStatus.className="muted down"}
+  try{const xr=await first(FEEDS.xray);const row=last(xr.data);vXray.textContent=xrayClass(row&&row.flux)}catch(e){vXray.textContent="DOWN";vXray.className="down"}
+  try{const h=await first(FEEDS.hemi);const lines=String(h.data).trim().split(/\n/).filter(l=>l&&!l.startsWith("#"));const parts=lines.pop().trim().split(/\s+/);vHemi.textContent=parts.length>=2?parts[parts.length-2]+" / "+parts[parts.length-1]:"—"}catch(e){vHemi.textContent="DOWN"}
+  try{const kf=await first(FEEDS.kpf);const rows=Array.isArray(kf.data)?kf.data.filter(r=>r.observed!=="observed").slice(0,8):[];kpForecast.textContent=rows.map(r=>`${String(r.time_tag||"").slice(5,16)}  Kp ${r.kp??r.Kp??""}`).join("\n")||"n/a"}catch(e){kpForecast.textContent="forecast DOWN"}
+}
 async function loadAurora(){try{const o=await first(FEEDS.aurora);const coords=o.data.coordinates||o.data;let best=0;if(auroraLayer)map.removeLayer(auroraLayer);auroraLayer=L.layerGroup();
 for(const p of coords){if(!p||p[2]<8)continue;const lon=p[0]>180?p[0]-360:p[0];L.circleMarker([p[1],lon],{radius:4,stroke:false,fillColor:"#22c55e",fillOpacity:0.22,interactive:false}).addTo(auroraLayer);const a=p[1]-cfg.lat,b=lon-cfg.lon;if(a*a+b*b<16)best=Math.max(best,p[2])}
-auroraLayer.addTo(map);homeAurora.textContent="aurora "+best+"%";mapStatus.textContent="NASA GIBS + night + OVATION"}catch(e){homeAurora.textContent="aurora DOWN";mapStatus.textContent="aurora DOWN"}}
-function loadTgo(){tgo.onload=()=>mark(tgoStatus,"","TGO H · "+new Date().toISOString().slice(11,16)+"Z");tgo.onerror=()=>mark(tgoStatus,"down","TGO DOWN");tgo.src=TGO+"&t="+Date.now()}
+auroraLayer.addTo(map);homeAurora.textContent="aurora near home "+best+"%";mapStatus.textContent="NASA GIBS + night terminator + OVATION"}catch(e){homeAurora.textContent="aurora DOWN";mapStatus.textContent="aurora DOWN"}}
+function loadTgo(){tgo.onload=()=>tgoStatus.textContent="TGO H · "+new Date().toISOString().slice(11,16)+"Z";tgo.onerror=()=>{tgoStatus.textContent="TGO DOWN";tgoStatus.className="muted down"};tgo.src=TGO+"&t="+Date.now()}
+function loadEnlil(){enlil.src=ENLIL+"?t="+Date.now()}
 async function loadNA(){const c=naPlot,w=c.width=c.clientWidth*2,h=c.height=c.clientHeight*2,ctx=c.getContext("2d");ctx.fillStyle="#0a0e18";ctx.fillRect(0,0,w,h);
-try{const colors=["#f87171","#60a5fa","#4ade80","#fbbf24"];let i=0;for(const id of NA){const j=await grab("https://geomag.usgs.gov/ws/data/?id="+id+"&format=json");const series=(j.values||[]).find(v=>v.id==="X"||v.id==="H")||j.values&&j.values[0];const vals=(series&&series.values||[]).filter(v=>typeof v==="number");if(vals.length<4)continue;const step=Math.max(1,Math.floor(vals.length/180));const sampled=vals.filter((_,n)=>n%step===0);const min=Math.min(...sampled),max=Math.max(...sampled),span=max-min||1;const y0=20+i*(h-30)/NA.length;ctx.strokeStyle=colors[i%4];ctx.lineWidth=2;ctx.beginPath();sampled.forEach((v,n)=>{const x=n/(sampled.length-1)*w,y=y0-((v-min)/span)*((h-40)/NA.length*0.7);n?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle="#8b97b8";ctx.font="20px sans-serif";ctx.fillText(id,8,y0);i++}mark(naStatus,"","USGS X · "+NA.join(" "))}catch(e){mark(naStatus,"down","USGS DOWN")}}
+try{const colors=["#f87171","#60a5fa","#4ade80","#fbbf24"];let i=0;for(const id of NA){const j=await grab("https://geomag.usgs.gov/ws/data/?id="+id+"&format=json");const series=(j.values||[]).find(v=>v.id==="X"||v.id==="H")||j.values&&j.values[0];const vals=(series&&series.values||[]).filter(v=>typeof v==="number");if(vals.length<4)continue;const step=Math.max(1,Math.floor(vals.length/180));const sampled=vals.filter((_,n)=>n%step===0);const min=Math.min(...sampled),max=Math.max(...sampled),span=max-min||1;const y0=24+i*(h-30)/NA.length;ctx.strokeStyle=colors[i%4];ctx.lineWidth=2;ctx.beginPath();sampled.forEach((v,n)=>{const x=n/(sampled.length-1)*w,y=y0-((v-min)/span)*((h-40)/NA.length*0.7);n?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle="#8b97b8";ctx.font="20px sans-serif";ctx.fillText(id,8,y0);i++}naStatus.textContent="USGS X · "+NA.join(" ")}catch(e){naStatus.textContent="USGS DOWN";naStatus.className="muted down"}}
 function tick(){
   const n=new Date();
-  utc.textContent=n.toISOString().slice(11,19);
-  utcDate.textContent=n.toUTCString().slice(0,16);
-  try{local.textContent=n.toLocaleTimeString("en-US",{timeZone:cfg.tz,hour12:false})}catch(e){local.textContent=n.toISOString().slice(11,19)}
+  utc.textContent="UTC "+n.toISOString().slice(11,19);
+  try{local.textContent="Local "+n.toLocaleTimeString("en-US",{timeZone:cfg.tz,hour12:false})}catch(e){local.textContent="UTC "+n.toISOString().slice(11,19)}
+  placeLabel.textContent=(cfg.place||"")+" · ZIP "+(cfg.zip||"—");
   const m=n.getUTCHours()*60+n.getUTCMinutes();
   if(m!==lastNightMin){lastNightMin=m;drawNight();}
 }
-applyPlace();tick();refreshWx();loadAurora();loadTgo();loadNA();
-setInterval(tick,1000);setInterval(refreshWx,60000);setInterval(loadAurora,300000);setInterval(loadTgo,360000);setInterval(loadNA,360000);
+setTimeout(()=>map.invalidateSize(),200);
+tick();refreshWx();loadAurora();loadTgo();loadNA();loadEnlil();
+setInterval(tick,1000);setInterval(refreshWx,60000);setInterval(loadAurora,300000);setInterval(loadTgo,360000);setInterval(loadNA,360000);setInterval(loadEnlil,360000);
 </script></body></html>
