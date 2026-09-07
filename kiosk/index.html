@@ -28,7 +28,7 @@ td.kp-g{color:#86efac}td.kp-4{background:#3b2a10;color:#fde68a}td.kp-5{backgroun
 td.kp-pred{opacity:.8}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
 .swcard{grid-column:1/-1}
-#swPlot{width:100%;height:820px;display:block;border-radius:8px;background:#0b1220}
+#swPlot{width:100%;height:860px;display:block;border-radius:8px;background:#0b1220}
 @media(max-width:980px){.cols{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
 .card h2{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
@@ -82,7 +82,7 @@ th:first-child,td:first-child{text-align:left}
     </div>
   </div>
   <div class="cols">
-    <div class="card swcard"><h2>Solar Wind · KNMI HAPI</h2><canvas id="swPlot"></canvas><div class="muted" id="swStatus">last 48 hours · live 60s</div></div>
+    <div class="card swcard"><h2>Solar Wind · KNMI HAPI</h2><canvas id="swPlot"></canvas><div class="muted" id="swStatus">last 36 hours + 1h pad · hourly</div></div>
     <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil"><div class="player"><button type="button" id="enlilPlay">Play</button><input id="enlilScrub" type="range" min="0" max="0" value="0"><span class="muted" id="enlilStamp"></span></div></div>
     <div class="card"><h2>Hobart BOM</h2><img id="hobart" alt="Hobart"></div>
     <div class="card"><h2>TGO Europe H</h2><img id="tgo" alt="TGO" referrerpolicy="no-referrer"></div>
@@ -156,13 +156,13 @@ function drawWindImf(){
 function samp(arr,n){if(!arr||!arr.length)return [];if(arr.length<=n)return arr;const out=[],step=arr.length/n;for(let i=0;i<n;i++)out.push(arr[Math.min(arr.length-1,Math.floor(i*step))]);return out}
 function drawSw(){
   const el=document.getElementById("swPlot"); if(!el)return;
-  const now=Date.now(),t0=now-48*3600000,t1=now;
-  const box=el.parentElement,cssW=Math.max(640,box.clientWidth||960),cssH=820,dpr=Math.min(2,window.devicePixelRatio||1);
+  const now=Date.now(),t0=now-36*3600000,t1=now+3600000;
+  const box=el.parentElement,cssW=Math.max(640,box.clientWidth||960),cssH=860,dpr=Math.min(2,window.devicePixelRatio||1);
   el.width=Math.round(cssW*dpr);el.height=Math.round(cssH*dpr);el.style.width=cssW+"px";el.style.height=cssH+"px";
   const ctx=el.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle="#0b1220";ctx.fillRect(0,0,cssW,cssH);
   const L=70,R=16,pw=cssW-L-R,span=t1-t0,xAt=t=>L+((t-t0)/span)*pw;
-  const panels=[{title:"IMF nT",log:0,ymin:-20,ymax:20,h:200},{title:"Speed km/s",log:0,ymin:200,ymax:800,h:130},{title:"Density",log:1,ymin:0.1,ymax:100,h:130},{title:"Hp30",log:0,ymin:0,ymax:9,h:110},{title:"Dst nT",log:0,ymin:-80,ymax:40,h:110}];
+  const panels=[{title:"X-ray",log:1,ymin:1e-7,ymax:1e-2,h:120},{title:"Protons",log:1,ymin:0.1,ymax:1e4,h:130},{title:"IMF nT",log:0,ymin:-20,ymax:20,h:180},{title:"Speed km/s",log:0,ymin:200,ymax:900,h:120},{title:"Hp30",log:0,ymin:0,ymax:9,h:110}];
   let yCursor=8;
   function yAt(y0,ph,ymin,ymax,log,v){if(log){const a=Math.log10(Math.max(ymin,v)),b=Math.log10(ymin),c=Math.log10(ymax)-b;return y0+ph-((a-b)/c)*ph}return y0+ph-((v-ymin)/(ymax-ymin))*ph}
   function frame(p){
@@ -176,21 +176,26 @@ function drawSw(){
   }
   function line(rows,key,color,y0,p){ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.beginPath();let on=false;samp(rows,1200).forEach(function(r){if(!isFinite(r[key])||!isFinite(r.t))return;const x=xAt(r.t),y=yAt(y0,p.h,p.ymin,p.ymax,p.log,r[key]);if(!on){ctx.moveTo(x,y);on=true}else ctx.lineTo(x,y)});ctx.stroke()}
   function area(rows,key,color,y0,p,base){const pts=samp(rows,1200).filter(r=>isFinite(r[key])&&isFinite(r.t));if(!pts.length)return;ctx.beginPath();const yb=yAt(y0,p.h,p.ymin,p.ymax,p.log,base);ctx.moveTo(xAt(pts[0].t),yb);pts.forEach(function(r){ctx.lineTo(xAt(r.t),yAt(y0,p.h,p.ymin,p.ymax,p.log,r[key]))});ctx.lineTo(xAt(pts[pts.length-1].t),yb);ctx.closePath();ctx.fillStyle=color;ctx.globalAlpha=0.55;ctx.fill();ctx.globalAlpha=1}
-  const p0=panels[0],y0=frame(p0);area(hapiPack.mag,"bt","#d6d6d6",y0,p0,0);area(hapiPack.mag,"bz_gsm","#C4472E",y0,p0,0);line(hapiPack.mag,"by_gsm","#008ce6",y0,p0);line(hapiPack.enlil,"bt","#94a3b8",y0,p0);
-  const p1=panels[1],y1=frame(p1);area(hapiPack.plasma,"speed","#ffe4a8",y1,p1,p1.ymin);line(hapiPack.plasma,"speed","#fec700",y1,p1);
-  const p2=panels[2],y2=frame(p2);area(hapiPack.plasma,"density","#caf0fe",y2,p2,p2.ymin);line(hapiPack.plasma,"density","#00a3d7",y2,p2);
-  const p3=panels[3],y3=frame(p3);
+  const p0=panels[0],y0=frame(p0);area(hapiPack.xray,"xray_flux_long","#d0e7ff",y0,p0,p0.ymin);line(hapiPack.xray,"xray_flux_short","#8f9cbc",y0,p0);
+  ctx.fillStyle="#8b97b3";ctx.font="10px sans-serif";ctx.textAlign="left";
+  ctx.fillText("C",L+4,yAt(y0,p0.h,p0.ymin,p0.ymax,1,1e-6)+3);
+  ctx.fillText("M",L+4,yAt(y0,p0.h,p0.ymin,p0.ymax,1,1e-5)+3);
+  ctx.fillText("X",L+4,yAt(y0,p0.h,p0.ymin,p0.ymax,1,1e-4)+3);
+  const p1=panels[1],y1=frame(p1);area(hapiPack.prot,"proton_flux_10MeV","#c6dae3",y1,p1,p1.ymin);line(hapiPack.prot,"proton_flux_50MeV","#83afc2",y1,p1);line(hapiPack.prot,"proton_flux_100MeV","#739fb2",y1,p1);line(hapiPack.prot,"proton_flux_500MeV","#537f92",y1,p1);
+  const p2=panels[2],y2=frame(p2);area(hapiPack.mag,"bt","#d6d6d6",y2,p2,0);area(hapiPack.mag,"bz_gsm","#C4472E",y2,p2,0);line(hapiPack.mag,"by_gsm","#008ce6",y2,p2);line(hapiPack.enlil,"bt","#94a3b8",y2,p2);
+  const p3=panels[3],y3=frame(p3);area(hapiPack.plasma,"speed","#ffe4a8",y3,p3,p3.ymin);line(hapiPack.plasma,"speed","#fec700",y3,p3);
+  const p4=panels[4],y4=frame(p4);
   const barW=Math.max(2,(30*60*1000)/span*pw-1);
-  (hapiPack.hp||[]).forEach(function(r){if(!isFinite(r.Hp30))return;const x=xAt(r.t),y=yAt(y3,p3.h,p3.ymin,p3.ymax,0,r.Hp30);ctx.fillStyle=r.Hp30>=5?"#FFF033":r.Hp30>=4?"#FFBB44":"#88CC66";ctx.fillRect(x,y,barW,y3+p3.h-y)});
-  const p4=panels[4],y4=frame(p4);area(hapiPack.dst,"Dst","#888888",y4,p4,0);line(hapiPack.dst,"Dst","#d1d5db",y4,p4);
-  ctx.fillStyle="#8b97b3";ctx.font="10px sans-serif";ctx.textAlign="center";
-  for(let h=0;h<=48;h+=6){const t=t0+h*3600000,dt=new Date(t);ctx.fillText(dt.getUTCHours()===0?dt.toISOString().slice(5,10):String(dt.getUTCHours()).padStart(2,"0")+":00",xAt(t),cssH-6)}
+  (hapiPack.hp||[]).forEach(function(r){if(!isFinite(r.Hp30))return;const x=xAt(r.t),y=yAt(y4,p4.h,p4.ymin,p4.ymax,0,r.Hp30);ctx.fillStyle=r.Hp30>=5?"#FFF033":r.Hp30>=4?"#FFBB44":"#88CC66";ctx.fillRect(x,y,barW,y4+p4.h-y)});
+  ctx.fillStyle="#8b97b3";ctx.font="9px sans-serif";ctx.textAlign="center";
+  const startH=new Date(t0);startH.setUTCMinutes(0,0,0);
+  for(let t=startH.getTime();t<=t1;t+=3600000){const dt=new Date(t);ctx.fillText(dt.getUTCHours()===0?dt.toISOString().slice(5,10):String(dt.getUTCHours()).padStart(2,"0"),xAt(t),cssH-6)}
 }
 function drawDst(){const d=Number(last(cache.dst).dst);vDst.textContent=isFinite(d)?Math.round(d)+" nT":"-"}
 function drawHp30(){const d=Number(last(cache.hp30).hp30);vHp30.textContent=isFinite(d)?d.toFixed(1):"-"}
 function drawAll(){drawWindImf()}
 async function loadWindImf(){
-  const now=new Date(),start=isoH(new Date(now.getTime()-48*3600000)),stop=isoH(now);
+  const now=new Date(),start=isoH(new Date(now.getTime()-36*3600000)),stop=isoH(new Date(now.getTime()+3600000));
   const [xray,prot,mag,plasma,enlil,kp,hp,kpf,dst]=await Promise.all([
     hapi("xray_flux_rt","xray_flux_long,xray_flux_short",start,stop),
     hapi("proton_flux_500_rt","proton_flux_10MeV,proton_flux_50MeV,proton_flux_100MeV,proton_flux_500MeV",start,stop),
@@ -205,7 +210,7 @@ async function loadWindImf(){
   hapiPack.xray=xray;hapiPack.prot=prot;hapiPack.mag=mag;hapiPack.plasma=plasma;hapiPack.enlil=enlil;hapiPack.kp=kp;hapiPack.hp=hp;hapiPack.kpf=kpf;hapiPack.dst=dst;
   const lm=last(mag);
   imfStatus.textContent=mag.length?("KNMI "+new Date(lm.t).toISOString().slice(0,16)+"Z"):"HAPI down";
-  if(swStatus) swStatus.textContent="KNMI HAPI live · last 48h · IMF / speed / density / Hp30";
+  if(swStatus) swStatus.textContent="KNMI HAPI live · last 36h + 1h pad · hourly";
   drawWindImf();
 }
 async function loadWx(){
