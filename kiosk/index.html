@@ -17,6 +17,9 @@ header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-
 @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .kpi b{display:block;font-size:22px}
+.dstpair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.dstpair .lab{color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.dstpair b{font-size:22px;line-height:1.1}
 .tone0{color:#eef3ff}.tone1{color:#f5d76e}.tone2{color:#f59e42}.tone3{color:#f05252}
 .kpi span{color:var(--muted);font-size:11px;text-transform:uppercase}
 .maprow{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,32%);gap:12px;align-items:stretch;margin-bottom:12px}
@@ -58,7 +61,13 @@ th:first-child,td:first-child{text-align:left}
     <div class="kpi"><span>Observer</span><b id="railUtc">-</b><div class="muted" id="placeLabel"></div><div class="muted" id="railLocal"></div><div class="muted" id="updatedAt">Updated —</div></div>
     <div class="kpi"><span>Aurora visibility</span><b id="vAurora">-</b><div class="muted">At this location · OVATION</div></div>
     <div class="kpi"><span>NOAA scales</span><b id="vRsg">-</b><div class="muted">R · S · G</div></div>
-    <div class="kpi"><span>Disturbance Storm Time Index</span><b id="vDst">-</b><div class="muted">Kyoto now · NOAA Geospace pred</div></div>
+    <div class="kpi">
+      <span>Disturbance Storm Time Index</span>
+      <div class="dstpair">
+        <div><div class="lab">Now · Kyoto</div><b id="vDst">-</b></div>
+        <div><div class="lab">Pred · Geospace</div><b id="vDstPred">-</b></div>
+      </div>
+    </div>
   </div>
   <div class="kpis" style="grid-template-columns:repeat(2,1fr)">
     <div class="kpi"><span>Hemispheric power now N/S</span><b id="vHemi">-</b></div>
@@ -209,11 +218,10 @@ function drawSw(){
 function drawDst(){
   const d=Number(last(cache.dst).dst);
   const p=Number(last(cache.dstPred||[]).dst);
-  let t="-";
-  if(isFinite(d)) t=Math.round(d)+" nT";
-  if(isFinite(p)) t+=(t==="-"?"":"  ")+"pred "+Math.round(p);
-  vDst.textContent=t;
-  tone(vDst,"dst",isFinite(p)?p:d);
+  vDst.textContent=isFinite(d)?Math.round(d)+" nT":"-";
+  tone(vDst,"dst",d);
+  const pred=document.getElementById("vDstPred");
+  if(pred){pred.textContent=isFinite(p)?Math.round(p)+" nT":"-";tone(pred,"dst",p)}
 }
 function drawHp30(){const d=Number(last(cache.hp30).hp30);if(isFinite(d)){vHp30.textContent=d.toFixed(1);tone(vHp30,"hp",d)}else vHp30.textContent="-"}
 function drawAll(){drawWindImf()}
