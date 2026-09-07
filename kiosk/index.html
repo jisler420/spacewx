@@ -17,6 +17,7 @@ header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-
 @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .kpi b{display:block;font-size:22px}
+.tone0{color:#eef3ff}.tone1{color:#f5d76e}.tone2{color:#f59e42}.tone3{color:#f05252}
 .kpi span{color:var(--muted);font-size:11px;text-transform:uppercase}
 .maprow{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,32%);gap:12px;align-items:stretch;margin-bottom:12px}
 @media(max-width:900px){.maprow{grid-template-columns:1fr}}
@@ -98,6 +99,20 @@ const cache={wind:[],mag:[],goes:[],dst:[],hp30:[],kp:[]};
 async function grab(u){const r=await fetch(u,{cache:"no-store"});if(!r.ok) throw new Error(String(r.status));const ct=r.headers.get("content-type")||"";return (ct.includes("json")||u.endsWith(".json"))?r.json():r.text()}
 async function settled(u){try{return await grab(u)}catch(e){return null}}
 const last=a=>Array.isArray(a)&&a.length?a[a.length-1]:{};
+function auroraLevel(kind,n){
+  if(!isFinite(n))return 0;
+  if(kind==="kp"||kind==="hp")return n<3.5?0:n<5?1:n<6.5?2:3;
+  if(kind==="bz")return n>0?0:n>-5?1:n>-10?2:3;
+  if(kind==="speed")return n<400?0:n<550?1:n<700?2:3;
+  if(kind==="density")return n<8?0:n<15?1:n<25?2:3;
+  if(kind==="bt")return n<8?0:n<15?1:n<25?2:3;
+  if(kind==="dst")return n>-20?0:n>-50?1:n>-100?2:3;
+  if(kind==="pct")return n<5?0:n<20?1:n<50?2:3;
+  if(kind==="hemi")return n<20?0:n<50?1:n<100?2:3;
+  if(kind==="g")return n<1?0:n<2?1:n<3?2:3;
+  return 0;
+}
+function tone(el,kind,n){if(!el)return;el.className="tone"+auroraLevel(kind,n)}
 function bust(u){return u+(u.includes("?")?"&":"?")+"t="+Date.now()}
 function sample(arr,n){if(!arr.length)return arr;const step=Math.max(1,Math.floor(arr.length/n));return arr.filter((_,i)=>i%step===0)}
 function parseT(t){let s=String(t||"").trim().replace(" ","T");if(!s)return NaN;s=s.replace(/\.(\d{3})\d+/,".$1");if(!/[zZ]|[+\-]\d{2}:?\d{2}$/.test(s))s+="Z";const ms=Date.parse(s);return isFinite(ms)?ms:NaN}
@@ -148,9 +163,15 @@ const hapiPack={xray:[],prot:[],mag:[],plasma:[],enlil:[],kp:[],hp:[],kpf:[],dst
 function drawWindImf(){
   const m=hapiPack.mag,p=hapiPack.plasma,lm=last(m),lp=last(p);
   vWind.textContent=isFinite(lp.speed)?Math.round(lp.speed)+" km/s":"-";
+  tone(vWind,"speed",lp.speed);
   vDen.textContent=isFinite(lp.density)?Number(lp.density).toFixed(1)+" p/cm3":"-";
+  tone(vDen,"density",lp.density);
   vBt.textContent=isFinite(lm.bt)?Number(lm.bt).toFixed(1)+" nT":"-";
+  tone(vBt,"bt",lm.bt);
   vBz.textContent=isFinite(lm.bz_gsm)?Number(lm.bz_gsm).toFixed(1)+" nT":"-";
+  tone(vBz,"bz",lm.bz_gsm);
+  const hpv=Number(last(hapiPack.hp).Hp30);
+  if(isFinite(hpv)){vHp30.textContent=hpv.toFixed(1);tone(vHp30,"hp",hpv)}
   drawSw();
 }
 function samp(arr,n){if(!arr||!arr.length)return [];if(arr.length<=n)return arr;const out=[],step=arr.length/n;for(let i=0;i<n;i++)out.push(arr[Math.min(arr.length-1,Math.floor(i*step))]);return out}
@@ -185,8 +206,8 @@ function drawSw(){
   const startH=new Date(t0);startH.setUTCMinutes(0,0,0);
   for(let t=startH.getTime();t<=t1;t+=3600000){const dt=new Date(t);ctx.fillText(dt.getUTCHours()===0?dt.toISOString().slice(5,10):String(dt.getUTCHours()).padStart(2,"0"),xAt(t),cssH-6)}
 }
-function drawDst(){const d=Number(last(cache.dst).dst);vDst.textContent=isFinite(d)?Math.round(d)+" nT":"-"}
-function drawHp30(){const d=Number(last(cache.hp30).hp30);vHp30.textContent=isFinite(d)?d.toFixed(1):"-"}
+function drawDst(){const d=Number(last(cache.dst).dst);vDst.textContent=isFinite(d)?Math.round(d)+" nT":"-";tone(vDst,"dst",d)}
+function drawHp30(){const d=Number(last(cache.hp30).hp30);if(isFinite(d)){vHp30.textContent=d.toFixed(1);tone(vHp30,"hp",d)}else vHp30.textContent="-"}
 function drawAll(){drawWindImf()}
 async function loadWindImf(){
   const now=new Date(),start=isoH(new Date(now.getTime()-36*3600000)),stop=isoH(new Date(now.getTime()+3600000));
@@ -215,9 +236,9 @@ async function loadWx(){
     settled("https://services.swpc.noaa.gov/products/kyoto-dst.json"),
     settled("https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt")
   ]);
-  const k=Number((last(kp)||{}).Kp); if(isFinite(k)) vKp.textContent=k.toFixed(1);
+  const k=Number((last(kp)||{}).Kp); if(isFinite(k)){vKp.textContent=k.toFixed(1);tone(vKp,"kp",k)}
   if(Array.isArray(kp)) cache.kp=kp;
-  if(sc&&sc["0"]){const n=sc["0"];vRsg.textContent="R"+(n.R&&n.R.Scale||0)+" S"+(n.S&&n.S.Scale||0)+" G"+(n.G&&n.G.Scale||0)}
+  if(sc&&sc["0"]){const n=sc["0"];vRsg.textContent="R"+(n.R&&n.R.Scale||0)+" S"+(n.S&&n.S.Scale||0)+" G"+(n.G&&n.G.Scale||0);tone(vRsg,"g",Number(n.G&&n.G.Scale||0))}
   if(Array.isArray(kf)){
     const by={};
     kf.forEach(r=>{const t=parseT(r.time_tag);if(!isFinite(t))return;const d=new Date(t);by[d.toISOString().slice(0,10)+"-"+d.getUTCHours()]={kp:r.kp??r.Kp,kind:r.observed||""}});
@@ -234,7 +255,7 @@ async function loadWx(){
     kpForecast.innerHTML=html+"</table>";
   }
   if(Array.isArray(dst)){cache.dst=dst.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag));drawDst()}
-  if(hemi){const lines=String(hemi).trim().split(/\n/).filter(l=>l&&!l.startsWith("#")).map(l=>l.trim().split(/\s+/)).filter(p=>p.length>=4);const last3=lines.slice(-3),cur=lines[lines.length-1]||[];const avg=i=>last3.length?last3.reduce((s,p)=>s+(+p[i]||0),0)/last3.length:NaN;vHemi.textContent=(cur[2]||"-")+" / "+(cur[3]||"-")+" GW";vHemiAvg.textContent=(isFinite(avg(2))?Math.round(avg(2)):"-")+" / "+(isFinite(avg(3))?Math.round(avg(3)):"-")+" GW"}
+  if(hemi){const lines=String(hemi).trim().split(/\n/).filter(l=>l&&!l.startsWith("#")).map(l=>l.trim().split(/\s+/)).filter(p=>p.length>=4);const last3=lines.slice(-3),cur=lines[lines.length-1]||[];const avg=i=>last3.length?last3.reduce((s,p)=>s+(+p[i]||0),0)/last3.length:NaN;vHemi.textContent=(cur[2]||"-")+" / "+(cur[3]||"-")+" GW";vHemiAvg.textContent=(isFinite(avg(2))?Math.round(avg(2)):"-")+" / "+(isFinite(avg(3))?Math.round(avg(3)):"-")+" GW";tone(vHemi,"hemi",Math.max(+cur[2]||0,+cur[3]||0));tone(vHemiAvg,"hemi",Math.max(avg(2)||0,avg(3)||0))}
   const ok=[kp,sc,kf,dst,hemi].filter(Boolean).length;feedStatus.textContent=ok>=4?"live":ok?"partial":"DOWN";feedStatus.className=ok>=4?"ok":ok?"muted":"down";drawSw();
 }
 async function loadGoes(){}
@@ -270,6 +291,7 @@ async function loadAurora(){
   let best=0,bestD=1e9;
   for(let i=0;i<coords.length;i++){const p=coords[i];if(!p||p.length<3)continue;const lon=p[0]>180?p[0]-360:p[0],dd=(p[1]-cfg.lat)*(p[1]-cfg.lat)+(lon-cfg.lon)*(lon-cfg.lon);if(dd<bestD){bestD=dd;best=p[2]}}
   vAurora.textContent=Math.round(best)+"%";
+  tone(vAurora,"pct",best);
   mapStatus.textContent="equirectangular Earth · poles + OVATION";
   drawEarth();
 }
