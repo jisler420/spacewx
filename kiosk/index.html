@@ -81,7 +81,11 @@ th:first-child,td:first-child{text-align:left}
     </div>
   </div>
   <div class="cols">
-    <div class="card swcard"><h2>Solar Wind · NOAA RTSW · 3 days</h2><canvas id="swPlot"></canvas><div class="muted">IMF Bt/Bz, Phi, Theta, density, speed, temperature, Kp</div></div>
+    <div class="card swcard"><h2>Solar Wind · NOAA 3-day + live RTSW</h2>
+      <img id="swOfficial" alt="NOAA 3-day solar wind">
+      <canvas id="swPlot"></canvas>
+      <div class="muted" id="swStatus">loading RTSW</div>
+    </div>
     <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil"><div class="player"><button type="button" id="enlilPlay">Play</button><input id="enlilScrub" type="range" min="0" max="0" value="0"><span class="muted" id="enlilStamp"></span></div></div>
     <div class="card"><h2>Hobart BOM</h2><img id="hobart" alt="Hobart"></div>
     <div class="card"><h2>TGO Europe H</h2><img id="tgo" alt="TGO" referrerpolicy="no-referrer"></div>
@@ -98,9 +102,8 @@ async function settled(u){try{return await grab(u)}catch(e){return null}}
 const last=a=>Array.isArray(a)&&a.length?a[a.length-1]:{};
 function bust(u){return u+(u.includes("?")?"&":"?")+"t="+Date.now()}
 function parseT(t){let s=String(t||"").replace(" ","T");if(!s)return NaN;if(!/[zZ]|[+\-]\d{2}:?\d{2}$/.test(s))s+="Z";const ms=Date.parse(s);return isFinite(ms)?ms:NaN}
-function rtswActive(rows){return (Array.isArray(rows)?rows:[]).filter(r=>r&&r.active===true).sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
 function drawWindImf(){
-  const w=cache.wind,m=cache.mag,lw=last(w),lm=last(m);
+  const w=cache.wind,m=cache.mag,lw=last(w),lm=[...m].reverse().find(r=>r.active)||last(m);
   vWind.textContent=isFinite(lw.proton_speed)?Math.round(lw.proton_speed)+" km/s":"-";
   vDen.textContent=isFinite(lw.proton_density)?Number(lw.proton_density).toFixed(1)+" p/cm3":"-";
   vBt.textContent=isFinite(lm.bt)?Number(lm.bt).toFixed(1)+" nT":"-";
@@ -109,18 +112,24 @@ function drawWindImf(){
 }
 function samp(arr,n){if(!arr||!arr.length)return [];if(arr.length<=n)return arr;const out=[],step=arr.length/n;for(let i=0;i<n;i++)out.push(arr[Math.min(arr.length-1,Math.floor(i*step))]);return out}
 function drawSw(){
+  const official=document.getElementById("swOfficial");
+  if(official) official.src="https://services.swpc.noaa.gov/images/ace-mag-swepam-3-day.gif?t="+Math.floor(Date.now()/60000);
   const el=document.getElementById("swPlot"); if(!el)return;
-  const hours=72,cut=Date.now()-hours*3600*1000;
-  const M=samp((cache.mag||[]).filter(r=>parseT(r.time_tag)>=cut),720);
-  const W=samp((cache.wind||[]).filter(r=>parseT(r.time_tag)>=cut),720);
-  const K=(cache.kp||[]).filter(r=>parseT(r.time_tag)>=cut);
+  const times=(cache.mag||[]).concat(cache.wind||[]).map(r=>parseT(r.time_tag)).filter(isFinite);
+  const t1=Date.now();
+  const t0=times.length?Math.min.apply(null,times):t1-24*3600*1000;
+  const M=samp((cache.mag||[]).filter(r=>parseT(r.time_tag)>=t0),900);
+  const W=samp((cache.wind||[]).filter(r=>parseT(r.time_tag)>=t0),900);
+  const K=(cache.kp||[]).filter(r=>parseT(r.time_tag)>=t0);
+  if(swStatus) swStatus.textContent="live RTSW "+M.length+" mag / "+W.length+" wind pts · axis fit to feed window";
   const box=el.parentElement,cssW=Math.max(640,box.clientWidth||960),cssH=560,dpr=Math.min(2,window.devicePixelRatio||1);
   el.width=Math.round(cssW*dpr);el.height=Math.round(cssH*dpr);el.style.width=cssW+"px";el.style.height=cssH+"px";
   const ctx=el.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle="#0b1220";ctx.fillRect(0,0,cssW,cssH);
   const L=64,R=10,T=8,panels=7,gap=2,usable=cssH-T-26,ph=(usable-gap*(panels-1))/panels,pw=cssW-L-R;
-  const t0=Date.now()-hours*3600*1000,t1=Date.now();
-  const xAt=t=>L+((t-t0)/(t1-t0))*pw;
+  const span=Math.max(60000,t1-t0);
+  const xAt=t=>L+((t-t0)/span)*pw;
+  const hours=Math.max(1,Math.round(span/3600000));
   function panel(i,title,ymin,ymax,log){
     const y0=8+i*(ph+gap);
     ctx.fillStyle="#070b12";ctx.fillRect(L,y0,pw,ph);ctx.strokeStyle="#1e293b";ctx.strokeRect(L,y0,pw,ph);
@@ -137,18 +146,19 @@ function drawSw(){
   const p4=panel(4,"Speed km/s",250,800,false);line(W,"proton_speed","#facc15",p4.yAt);
   const p5=panel(5,"Temp K",1e4,1e6,true);line(W,"proton_temperature","#4ade80",p5.yAt);
   const p6=panel(6,"Kp",0,9,false);ctx.fillStyle="#4ade80";
-  K.forEach(function(r){const t=parseT(r.time_tag),v=Number(r.Kp!=null?r.Kp:r.kp);if(!isFinite(t)||!isFinite(v))return;const x=xAt(t),bw=Math.max(2,(3*3600*1000)/(t1-t0)*pw-1),y=p6.yAt(v);ctx.fillRect(x,y,bw,p6.y0+ph-y)});
+  K.forEach(function(r){const t=parseT(r.time_tag),v=Number(r.Kp!=null?r.Kp:r.kp);if(!isFinite(t)||!isFinite(v))return;const x=xAt(t),bw=Math.max(2,(3*3600*1000)/span*pw-1),y=p6.yAt(v);ctx.fillRect(x,y,bw,p6.y0+ph-y)});
   ctx.fillStyle="#8b97b3";ctx.font="10px sans-serif";ctx.textAlign="center";
-  for(let h=0;h<=hours;h+=12){const t=t0+h*3600*1000,d=new Date(t);ctx.fillText(d.toISOString().slice(8,10)+" "+String(d.getUTCHours()).padStart(2,"0")+"z",xAt(t),cssH-6)}
+  const step=hours>36?12:hours>12?3:1;
+  for(let h=0;h<=hours;h+=step){const t=t0+h*3600*1000,d=new Date(t);ctx.fillText(d.toISOString().slice(8,10)+" "+String(d.getUTCHours()).padStart(2,"0")+"z",xAt(t),cssH-6)}
 }
 function drawDst(){const d=Number(last(cache.dst).dst);vDst.textContent=isFinite(d)?Math.round(d)+" nT":"-"}
 function drawHp30(){const d=Number(last(cache.hp30).hp30);vHp30.textContent=isFinite(d)?d.toFixed(1):"-"}
 function drawAll(){drawWindImf()}
 async function loadWindImf(){
   const [wind,mag]=await Promise.all([settled("https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json"),settled("https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json")]);
-  if(wind) cache.wind=rtswActive(wind).filter(r=>isFinite(Number(r.proton_speed)));
-  if(mag) cache.mag=rtswActive(mag).filter(r=>isFinite(Number(r.bt)));
-  const lm=last(cache.mag);
+  if(wind) cache.wind=(Array.isArray(wind)?wind:[]).filter(r=>isFinite(Number(r.proton_speed))).sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag));
+  if(mag) cache.mag=(Array.isArray(mag)?mag:[]).filter(r=>isFinite(Number(r.bt))).sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag));
+  const lm=[...cache.mag].reverse().find(r=>r.active)||last(cache.mag);
   imfStatus.textContent=cache.mag.length?((lm.source||"L1")+" "+String(lm.time_tag||"")):"IMF / wind down";
   drawWindImf();
 }
