@@ -51,7 +51,29 @@ const map=L.map("map",{worldCopyJump:true,zoomControl:true}).setView([cfg.lat,cf
 L.tileLayer("https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",{maxNativeZoom:8,maxZoom:6,attribution:"NASA GIBS"}).addTo(map);
 L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",{maxZoom:6,opacity:0.7,attribution:"Esri"}).addTo(map);
 let pin=L.circleMarker([cfg.lat,cfg.lon],{radius:7,color:"#fb923c",fillColor:"#fb923c",fillOpacity:1}).addTo(map);
-let auroraLayer=null;
+let auroraLayer=null,nightLayer=null,termLine=null,lastNightMin=-1;
+function sunPos(d){
+  const start=Date.UTC(d.getUTCFullYear(),0,1);
+  const day=(d-start)/864e5+1;
+  const decl=-23.44*Math.cos((2*Math.PI/365)*(day+10));
+  const min=d.getUTCHours()*60+d.getUTCMinutes()+d.getUTCSeconds()/60;
+  return {decl,lngSun:180-min/4};
+}
+function drawNight(){
+  const d=new Date(),{decl,lngSun}=sunPos(d),rad=Math.PI/180,line=[];
+  for(let lng=-180;lng<=180;lng+=2){
+    let lat=0;
+    const t=Math.tan(decl*rad);
+    if(Math.abs(t)>1e-6) lat=Math.atan(-Math.cos((lng-lngSun)*rad)/t)/rad;
+    if(lat>89.9) lat=89.9; if(lat<-89.9) lat=-89.9;
+    line.push([lat,lng]);
+  }
+  const night=decl>=0?line.concat([[-90,180],[-90,-180]]):line.concat([[90,180],[90,-180]]);
+  if(nightLayer) map.removeLayer(nightLayer);
+  if(termLine) map.removeLayer(termLine);
+  nightLayer=L.polygon(night,{stroke:false,fillColor:"#02040a",fillOpacity:0.55,interactive:false}).addTo(map);
+  termLine=L.polyline(line,{color:"#e5e7eb",weight:2,opacity:0.95,interactive:false}).addTo(map);
+}
 function applyPlace(){placeLabel.textContent=cfg.place||"";zipLabel.textContent="ZIP "+(cfg.zip||"—");tzLabel.textContent="Local · "+cfg.tz;if(pin)map.removeLayer(pin);pin=L.circleMarker([cfg.lat,cfg.lon],{radius:7,color:"#fb923c",fillColor:"#fb923c",fillOpacity:1}).addTo(map)}
 async function refreshWx(){try{const kp=await first(FEEDS.kp),dst=await first(FEEDS.dst),sfi=await first(FEEDS.sfi),mag=await first(FEEDS.mag),wind=await first(FEEDS.wind),sc=await first(FEEDS.scales);
 const k=Number((last(kp.data)||kp.data).Kp);const d=Number((last(dst.data)||{}).dst);const bz=Number((last(mag.data)||mag.data).bz_gsm);const w=Number((last(wind.data)||wind.data).proton_speed);const flux=Number(sfi.data.flux);const n=sc.data["0"]||{};
@@ -61,11 +83,18 @@ try{const kf=await first(FEEDS.kpf);const rows=Array.isArray(kf.data)?kf.data.sl
 }catch(e){nums.className="big down";mark(feedStatus,"down","DOWN "+e)}}
 async function loadAurora(){try{const o=await first(FEEDS.aurora);const coords=o.data.coordinates||o.data;let best=0;if(auroraLayer)map.removeLayer(auroraLayer);auroraLayer=L.layerGroup();
 for(const p of coords){if(!p||p[2]<8)continue;const lon=p[0]>180?p[0]-360:p[0];L.circleMarker([p[1],lon],{radius:4,stroke:false,fillColor:"#22c55e",fillOpacity:0.22,interactive:false}).addTo(auroraLayer);const a=p[1]-cfg.lat,b=lon-cfg.lon;if(a*a+b*b<16)best=Math.max(best,p[2])}
-auroraLayer.addTo(map);homeAurora.textContent="aurora "+best+"%";mapStatus.textContent="NASA GIBS + OVATION"}catch(e){homeAurora.textContent="aurora DOWN";mapStatus.textContent="aurora DOWN"}}
+auroraLayer.addTo(map);homeAurora.textContent="aurora "+best+"%";mapStatus.textContent="NASA GIBS + night + OVATION"}catch(e){homeAurora.textContent="aurora DOWN";mapStatus.textContent="aurora DOWN"}}
 function loadTgo(){tgo.onload=()=>mark(tgoStatus,"","TGO H · "+new Date().toISOString().slice(11,16)+"Z");tgo.onerror=()=>mark(tgoStatus,"down","TGO DOWN");tgo.src=TGO+"&t="+Date.now()}
 async function loadNA(){const c=naPlot,w=c.width=c.clientWidth*2,h=c.height=c.clientHeight*2,ctx=c.getContext("2d");ctx.fillStyle="#0a0e18";ctx.fillRect(0,0,w,h);
 try{const colors=["#f87171","#60a5fa","#4ade80","#fbbf24"];let i=0;for(const id of NA){const j=await grab("https://geomag.usgs.gov/ws/data/?id="+id+"&format=json");const series=(j.values||[]).find(v=>v.id==="X"||v.id==="H")||j.values&&j.values[0];const vals=(series&&series.values||[]).filter(v=>typeof v==="number");if(vals.length<4)continue;const step=Math.max(1,Math.floor(vals.length/180));const sampled=vals.filter((_,n)=>n%step===0);const min=Math.min(...sampled),max=Math.max(...sampled),span=max-min||1;const y0=20+i*(h-30)/NA.length;ctx.strokeStyle=colors[i%4];ctx.lineWidth=2;ctx.beginPath();sampled.forEach((v,n)=>{const x=n/(sampled.length-1)*w,y=y0-((v-min)/span)*((h-40)/NA.length*0.7);n?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle="#8b97b8";ctx.font="20px sans-serif";ctx.fillText(id,8,y0);i++}mark(naStatus,"","USGS X · "+NA.join(" "))}catch(e){mark(naStatus,"down","USGS DOWN")}}
-function tick(){const n=new Date();utc.textContent=n.toISOString().slice(11,19);utcDate.textContent=n.toUTCString().slice(0,16);try{local.textContent=n.toLocaleTimeString("en-US",{timeZone:cfg.tz,hour12:false})}catch(e){local.textContent=n.toISOString().slice(11,19)}}
+function tick(){
+  const n=new Date();
+  utc.textContent=n.toISOString().slice(11,19);
+  utcDate.textContent=n.toUTCString().slice(0,16);
+  try{local.textContent=n.toLocaleTimeString("en-US",{timeZone:cfg.tz,hour12:false})}catch(e){local.textContent=n.toISOString().slice(11,19)}
+  const m=n.getUTCHours()*60+n.getUTCMinutes();
+  if(m!==lastNightMin){lastNightMin=m;drawNight();}
+}
 applyPlace();tick();refreshWx();loadAurora();loadTgo();loadNA();
 setInterval(tick,1000);setInterval(refreshWx,60000);setInterval(loadAurora,300000);setInterval(loadTgo,360000);setInterval(loadNA,360000);
 </script></body></html>
