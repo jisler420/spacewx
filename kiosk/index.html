@@ -100,7 +100,7 @@ async function settled(u){try{return await grab(u)}catch(e){return null}}
 const last=a=>Array.isArray(a)&&a.length?a[a.length-1]:{};
 function bust(u){return u+(u.includes("?")?"&":"?")+"t="+Date.now()}
 function sample(arr,n){if(!arr.length)return arr;const step=Math.max(1,Math.floor(arr.length/n));return arr.filter((_,i)=>i%step===0)}
-function parseT(t){let s=String(t||"").replace(" ","T");if(!s)return NaN;if(!/[zZ]|[+\-]\d{2}:?\d{2}$/.test(s))s+="Z";const ms=Date.parse(s);return isFinite(ms)?ms:NaN}
+function parseT(t){let s=String(t||"").trim().replace(" ","T");if(!s)return NaN;s=s.replace(/\.(\d{3})\d+/,".$1");if(!/[zZ]|[+\-]\d{2}:?\d{2}$/.test(s))s+="Z";const ms=Date.parse(s);return isFinite(ms)?ms:NaN}
 function sliceHours(rows){const cut=Date.now()-HOURS*3600*1000;return (rows||[]).filter(r=>parseT(r.time_tag)>=cut)}
 function rtswActive(rows){return (Array.isArray(rows)?rows:[]).filter(r=>r&&r.active===true).sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
 function chart(canvas,series,unit){
