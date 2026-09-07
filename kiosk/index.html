@@ -12,12 +12,10 @@ html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Segoe U
 a{color:var(--acc);text-decoration:none}
 header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--rail);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
 .brand{font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
-.shell{display:grid;grid-template-columns:minmax(0,1fr) 280px;max-width:1680px;margin:0 auto}
-@media(max-width:1100px){.shell{grid-template-columns:1fr}}
+.shell{max-width:1680px;margin:0 auto}
 .main{padding:14px 16px 48px}
-.rail{background:var(--rail);border-left:1px solid var(--line);padding:14px}
 .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:12px}
-@media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .kpi b{display:block;font-size:22px}
 .kpi span{color:var(--muted);font-size:11px;text-transform:uppercase}
@@ -29,13 +27,11 @@ header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-
 .card h2{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .card img,canvas{width:100%;display:block;border-radius:8px;background:#000}
 canvas.chart{height:210px;background:#0a0e18}
-.big{font-size:28px;font-weight:700}
 .muted{color:var(--muted);font-size:12px}
 .ok{color:var(--ok)}.down{color:var(--bad)}
 .player{display:flex;gap:8px;align-items:center;margin-top:8px}
 .player button{background:#101827;color:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
 .player input{flex:1}
-.rail .card{margin-bottom:10px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:6px 4px;border-bottom:1px solid #1d2738;text-align:center}
 th:first-child,td:first-child{text-align:left}
@@ -46,10 +42,16 @@ th:first-child,td:first-child{text-align:left}
   <div class="brand">SpaceWx</div>
   <div class="muted" id="utc">UTC</div>
   <div class="muted" id="local">Local</div>
-  <nav><a href="index.html">Live</a> · <a href="settings.html">Settings</a></nav>
+  <nav><a href="index.html">Live</a> · <a href="settings.html">Settings</a> · <span id="feedStatus" class="muted">checking</span> <span id="imfStatus" class="muted"></span></nav>
 </header>
 <div class="shell">
 <main class="main">
+  <div class="kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+    <div class="kpi"><span>Observer</span><b id="railUtc">-</b><div class="muted" id="placeLabel"></div><div class="muted" id="railLocal"></div></div>
+    <div class="kpi"><span>Aurora visibility</span><b id="vAurora">-</b><div class="muted">At this ZIP · OVATION</div></div>
+    <div class="kpi"><span>NOAA scales</span><b id="vRsg">-</b><div class="muted">R · S · G</div></div>
+    <div class="kpi"><span>Dst now</span><b id="vDst">-</b><div class="muted">Kyoto WDC</div></div>
+  </div>
   <div class="kpis" style="grid-template-columns:repeat(2,1fr)">
     <div class="kpi"><span>Hemispheric power now N/S</span><b id="vHemi">-</b></div>
     <div class="kpi"><span>15-min average N/S</span><b id="vHemiAvg">-</b></div>
@@ -76,18 +78,11 @@ th:first-child,td:first-child{text-align:left}
     <div class="card"><h2>GOES Hp nT</h2><canvas class="chart" id="goesPlot"></canvas><div class="muted" id="goesStatus">Last 2.5 hours</div></div>
     <div class="card"><h2>Dst nT</h2><canvas class="chart" id="dstCanvas"></canvas><div class="muted">Last 2.5 hours</div></div>
     <div class="card"><h2>Hp30</h2><canvas class="chart" id="hp30Plot"></canvas><div class="muted">GFZ nowcast</div></div>
-    <div class="card"><h2>Kiruna IRF</h2><img id="kiruna" alt="Kiruna"></div>
     <div class="card"><h2>TGO Europe H</h2><img id="tgo" alt="TGO" referrerpolicy="no-referrer"></div>
     <div class="card"><h2>Hobart BOM</h2><img id="hobart" alt="Hobart"></div>
     <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil"><div class="player"><button type="button" id="enlilPlay">Play</button><input id="enlilScrub" type="range" min="0" max="0" value="0"><span class="muted" id="enlilStamp"></span></div></div>
   </div>
 </main>
-<aside class="rail">
-  <div class="card"><h2>Observer</h2><div class="big" id="railUtc"></div><div class="muted" id="railLocal"></div><div id="placeLabel"></div><div class="big" id="vAurora">-</div><div class="muted">Aurora visibility at this ZIP</div><div class="muted"><a href="settings.html">Change ZIP</a></div></div>
-  <div class="card"><h2>NOAA scales</h2><div class="big" id="vRsg">-</div></div>
-  <div class="card"><h2>Dst now</h2><div class="big" id="vDst">-</div></div>
-  <div class="card"><h2>Feeds</h2><div id="feedStatus" class="muted">checking</div><div class="muted" id="imfStatus"></div></div>
-</aside>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
@@ -211,10 +206,9 @@ async function loadHp30(){
   cache.hp30=rows; drawHp30();
 }
 function loadImgs(){
-  kiruna.src=bust("https://www2.irf.se/maggraphs/kiraver.png");
   hobart.src=bust("https://www.sws.bom.gov.au/Images/Geophysical/Latest%20Conditions/Magnetograms/Hobart.gif");
   tgo.src="https://flux.phys.uit.no/cgi-bin/mkstackplot.cgi?GifOnly&&comp=H&nor=&Sync=&t="+Date.now();
-  [kiruna,hobart,tgo].forEach(img=>{img.onerror=()=>{img.style.display="none";};});
+  [hobart,tgo].forEach(img=>{img.onerror=()=>{img.style.display="none";};});
 }
 let map=null,drawNight=()=>{},loadAurora=async()=>{};
 function sizeMap(){if(map){map.invalidateSize();map.setView([20,0],2,{animate:false})}}
