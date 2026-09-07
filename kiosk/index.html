@@ -128,7 +128,8 @@ function auroraLevel(kind,n){
   if(kind==="hemi"){const y=20+t*60,o=50+t*100,r=100+t*150;return n<y?0:n<o?1:n<r?2:3}
   return 0;
 }
-function tone(el,kind,n){if(!el)return;el.className="tone"+auroraLevel(kind,n)}
+function gFromKp(k){if(!isFinite(k)||k<5)return "G0";if(k<6)return "G1";if(k<7)return "G2";if(k<8)return "G3";if(k<9)return "G4";return "G5"}
+function kpGCell(k){return isFinite(k)?(k.toFixed(1)+"<div class=\"muted\">"+gFromKp(k)+"</div>"):"-"}
 function bust(u){return u+(u.includes("?")?"&":"?")+"t="+Date.now()}
 function sample(arr,n){if(!arr.length)return arr;const step=Math.max(1,Math.floor(arr.length/n));return arr.filter((_,i)=>i%step===0)}
 function parseT(t){let s=String(t||"").trim().replace(" ","T");if(!s)return NaN;s=s.replace(/\.(\d{3})\d+/,".$1");if(!/[zZ]|[+\-]\d{2}:?\d{2}$/.test(s))s+="Z";const ms=Date.parse(s);return isFinite(ms)?ms:NaN}
@@ -274,7 +275,7 @@ async function loadWx(){
     let html="<table><tr><th>UTC</th>";days.forEach(function(d){html+="<th>"+d.label+"</th>"});html+="</tr>";
     for(let h=0;h<24;h+=3){
       html+="<tr><td>"+String(h).padStart(2,"0")+"z</td>";
-      days.forEach(function(d){const s=by[d.date+"-"+h], kv=s&&isFinite(s.kp)?Number(s.kp):NaN;let cls="";if(isFinite(kv)) cls=kv>=7?"kp-7":kv>=5?"kp-5":kv>=4?"kp-4":"kp-g";if(s&&String(s.kind).toLowerCase().indexOf("pred")===0) cls+=" kp-pred";if(d.date===nowD&&h===nowH) cls+=" kp-now";html+="<td class=\""+cls+"\">"+(isFinite(kv)?kv.toFixed(1):"-")+"</td>"});
+      days.forEach(function(d){const s=by[d.date+"-"+h], kv=s&&isFinite(s.kp)?Number(s.kp):NaN;let cls="";if(isFinite(kv)) cls=kv>=7?"kp-7":kv>=5?"kp-5":kv>=4?"kp-4":"kp-g";if(s&&String(s.kind).toLowerCase().indexOf("pred")===0) cls+=" kp-pred";if(d.date===nowD&&h===nowH) cls+=" kp-now";html+="<td class=\""+cls+"\">"+kpGCell(kv)+"</td>"});
       html+="</tr>";
     }
     kpForecast.innerHTML=html+"</table>";
@@ -358,7 +359,7 @@ function applyWorkerData(data){
       let html="<table><tr><th>UTC</th>";days.forEach(function(d){html+="<th>"+d.label+"</th>"});html+="</tr>";
       for(let h=0;h<24;h+=3){
         html+="<tr><td>"+String(h).padStart(2,"0")+"z</td>";
-        days.forEach(function(d){const s=by[d.date+"-"+h], kv=s&&isFinite(s.kp)?Number(s.kp):NaN;let cls="";if(isFinite(kv)) cls=kv>=7?"kp-7":kv>=5?"kp-5":kv>=4?"kp-4":"kp-g";if(s&&String(s.kind).toLowerCase().indexOf("pred")===0) cls+=" kp-pred";if(d.date===nowD&&h===nowH) cls+=" kp-now";html+="<td class=\""+cls+"\">"+(isFinite(kv)?kv.toFixed(1):"-")+"</td>"});
+        days.forEach(function(d){const s=by[d.date+"-"+h], kv=s&&isFinite(s.kp)?Number(s.kp):NaN;let cls="";if(isFinite(kv)) cls=kv>=7?"kp-7":kv>=5?"kp-5":kv>=4?"kp-4":"kp-g";if(s&&String(s.kind).toLowerCase().indexOf("pred")===0) cls+=" kp-pred";if(d.date===nowD&&h===nowH) cls+=" kp-now";html+="<td class=\""+cls+"\">"+kpGCell(kv)+"</td>"});
         html+="</tr>";
       }
       kpForecast.innerHTML=html+"</table>";
