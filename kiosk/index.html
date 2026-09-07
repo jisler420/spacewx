@@ -118,7 +118,7 @@ function auroraLevel(kind,n){
   if(!isFinite(n))return 0;
   if(kind==="g")return n<1?0:n<2?1:n<3?2:3;
   if(kind==="pct")return n<5?0:n<20?1:n<50?2:3;
-  const s=Math.max(0.5,Math.min(2.2,1+(60-Math.abs(magLat(cfg.lat,cfg.lon)))/40));
+  const s=Math.abs(cfg.lat)>=40?1:Math.max(1,Math.min(2.2,1+(40-Math.abs(cfg.lat))/25));
   if(kind==="kp"||kind==="hp"){const a=3.5*s,b=5*s,c=Math.min(8.7,6.5*s);return n<a?0:n<b?1:n<c?2:3}
   if(kind==="bz")return n>0?0:n>-5*s?1:n>-10*s?2:3;
   if(kind==="speed")return n<400+80*(s-1)?0:n<550+100*(s-1)?1:n<700+120*(s-1)?2:3;
