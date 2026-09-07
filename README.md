@@ -1,6 +1,6 @@
 # SpaceWx
 
-Space-weather dashboard. Aurora oval, day/night terminator, clocks, NOAA numbers, TGO Europe stackplot, USGS North America stackplot. No ham-radio layers.
+Space-weather dashboard. Aurora oval, day/night terminator, NOAA numbers, TGO Europe stackplot, USGS North America stackplot, WSA-Enlil. No ham-radio layers.
 
 - Repo: https://github.com/jisler420/spacewx
 - Live: https://jisler420.github.io/spacewx/
@@ -8,15 +8,21 @@ Space-weather dashboard. Aurora oval, day/night terminator, clocks, NOAA numbers
 
 ## Use it
 
-Open the live link in any browser with internet. ZIP is under Settings. US 5-digit only. Skip / blank uses Grand Forks, ND **58201**. Change it anytime.
+Open the Live link in any browser with internet.
 
-Or clone this repo and open `kiosk/index.html` locally.
+Settings takes a US 5-digit ZIP. Leave it blank and it stays **Grand Forks, ND 58201**.
 
-## On a Raspberry Pi
+Same page works on a Raspberry Pi in Chromium if you want it on a wall. There is no custom `.img.xz`.
 
-No custom image. Stock Raspberry Pi OS + Chromium pointed at the live URL is enough.
+## Files
+
+| File | What |
+|---|---|
+| `kiosk/index.html` | Live dashboard |
+| `kiosk/settings.html` | ZIP settings |
+| `FEEDS.md` | NOAA / TGO / USGS sources |
+| `.github/workflows/pages.yml` | Publishes the site |
 
 ## Feeds
 
-See `FEEDS.md`. Public NOAA / USGS / TGO sources. If a feed fails, the next URL is tried. Down/stale is labeled on the page.
-Europe H plot is the official TGO GIF, refreshed about every 6 minutes.
+See `FEEDS.md`. Failover + stale/down labels. TGO H GIF refreshes about every 6 minutes.
