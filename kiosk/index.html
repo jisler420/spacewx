@@ -218,7 +218,7 @@ function loadImgs(){
 const map=L.map("map",{center:[20,0],zoom:2,minZoom:2,maxZoom:2,zoomControl:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,touchZoom:false,keyboard:false,dragging:false,worldCopyJump:false,maxBounds:[[-85,-180],[85,180]],maxBoundsViscosity:1});
 function sizeMap(){map.invalidateSize();map.setView([20,0],2,{animate:false})}
 sizeMap();requestAnimationFrame(sizeMap);setTimeout(sizeMap,250);
-L.tileLayer("https://basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png",{maxZoom:2,noWrap:true}).addTo(map);
+L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",{maxZoom:2,noWrap:true}).addTo(map);
 L.circleMarker([cfg.lat,cfg.lon],{radius:7,color:"#fb923c",fillColor:"#fb923c",fillOpacity:1}).addTo(map);
 let nightLayer=null,termLine=null,auroraLayer=null;
 function drawNight(){
