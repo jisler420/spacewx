@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>SpaceWx</title>
 <style>
 :root{--bg:#070b12;--card:#121826;--line:#2a3650;--text:#eef3ff;--muted:#8b97b3;--acc:#5eead4;--ok:#34d399;--bad:#f87171;--rail:#0b1220}
@@ -406,18 +407,19 @@ function applyWorkerData(data){
 }
 
 tick();drawEarth();loadImgs();loadEnlil();
-let wxWorker=null;
+loadWx();loadWindImf();loadHp30();loadAurora();
+let wxWorker=null, workerOk=false;
 try{
-  wxWorker=new Worker("spacewx-worker.js");
-  wxWorker.onmessage=function(e){if(e.data&&e.data.type==="update")applyWorkerData(e.data.data)};
+  const wurl=new URL("spacewx-worker.js", document.baseURI||location.href);
+  wxWorker=new Worker(wurl);
+  wxWorker.onmessage=function(e){
+    if(e.data&&e.data.type==="update"){workerOk=true;applyWorkerData(e.data.data)}
+  };
+  wxWorker.onerror=function(){workerOk=false;wxWorker=null};
   wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||30});
-  wxWorker.onerror=function(){if(!wxWorker._fallback){wxWorker._fallback=1;refreshKpis();scheduleOnMinute(refreshKpis)}};
-}catch(e){
-  loadWx();loadWindImf();loadHp30();loadAurora();
-  setInterval(refreshKpis,60000);
-}
+}catch(e){wxWorker=null;workerOk=false}
 function refreshKpis(){
-  if(wxWorker){try{wxWorker.postMessage({type:"poll"});return}catch(e){}}
+  if(wxWorker&&workerOk){try{wxWorker.postMessage({type:"poll"});return}catch(e){wxWorker=null}}
   loadWx();loadWindImf();loadHp30();loadAurora();
 }
 setInterval(tick,1000);
