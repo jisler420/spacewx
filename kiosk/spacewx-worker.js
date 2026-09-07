@@ -72,7 +72,7 @@ async function collect() {
     settled("https://services.swpc.noaa.gov/json/geospace/geospace_dst_1_hour.json"),
     settled("https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt"),
     settled("https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"),
-    settled("https://kp.gfz.de/fileadmin/files_for_gfz_cms/Hp30_ap30_nowcast.txt"),
+    settled("./hp30.txt"),
   ]);
   return { mag, plasma, enlil, hp, kp, sc, kf, dst, dstPred, hemi, aurora, hp30txt, fetchedAt: Date.now() };
 }
