@@ -110,7 +110,7 @@ function chart(canvas,series,unit){
   const w=canvas.width=Math.max(480,Math.floor(canvas.clientWidth*2)||480);
   const h=canvas.height=420,ctx=canvas.getContext("2d");
   const left=54,R=12,T=12,B=28,pw=w-left-R,ph=h-T-B;
-  ctx.fillStyle="#0a0e18";ctx.fillRect(0,0,w,h);
+  ctx.fillStyle="#070b12";ctx.fillRect(0,0,w,h);
   const all=[];series.forEach(s=>s.y.forEach(v=>{if(isFinite(v))all.push(v)}));
   if(!all.length){ctx.fillStyle="#8b97b3";ctx.fillText("no data",left,h/2);return}
   let ymin=Math.min(...all),ymax=Math.max(...all);if(ymin===ymax){ymin-=1;ymax+=1}
@@ -179,11 +179,11 @@ async function loadWx(){
 async function loadGoes(){const j=await settled("https://services.swpc.noaa.gov/json/goes/primary/magnetometers-1-day.json");if(!j){goesStatus.textContent="GOES down";return}cache.goes=(Array.isArray(j)?j:[]).sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag));drawGoes()}
 async function loadHp30(){const txt=await settled("./hp30.txt")||await settled("https://kp.gfz.de/fileadmin/files_for_gfz_cms/Hp30_ap30_nowcast.txt");if(!txt){vHp30.textContent="-";return}const rows=[];String(txt).split(/\n/).forEach(line=>{if(!line||line.startsWith("#"))return;const p=line.trim().split(/\s+/);if(p.length<8)return;const hp=Number(p[7]);if(!isFinite(hp)||hp<0)return;rows.push({hp30:hp})});cache.hp30=rows;drawHp30()}
 function loadImgs(){hobart.src=bust("https://www.sws.bom.gov.au/Images/Geophysical/Latest%20Conditions/Magnetograms/Hobart.gif");tgo.src="https://flux.phys.uit.no/cgi-bin/mkstackplot.cgi?GifOnly&&comp=H&nor=&Sync=&t="+Date.now();[hobart,tgo].forEach(img=>{img.onerror=function(){img.style.display="none"}})}
-const BASE="https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/export?bbox=-180,-90,180,90&bboxSR=4326&imageSR=4326&size=1600,800&format=png&f=image";
+const BASE="https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/export?bbox=-180,-85,180,85&bboxSR=4326&imageSR=4326&size=1600,756&format=png&f=image";
 let baseImg=null,auroraData=null;
 function xy(lon,lat,w,h){const xlon=lon>180?lon-360:lon;return [((xlon+180)/360)*w,((90-lat)/180)*h]}
-function ovationColor(p){if(p<2)return [0,0,0,0];const t=Math.min(1,(p-2)/75);if(t<0.45){const u=t/0.45;return [20,Math.round(140+u*80),30,Math.round(50+u*90)]}if(t<0.75){const u=(t-0.45)/0.3;return [Math.round(40+u*180),Math.round(220-u*20),Math.round(20+u*20),Math.round(140+u*40)]}const u=(t-0.75)/0.25;return [Math.round(220+u*35),Math.round(230+u*25),Math.round(80+u*140),210]}
-function paintOvation(coords){const gw=360,gh=181,grid=new Float32Array(gw*gh);for(let i=0;i<coords.length;i++){const p=coords[i];if(!p||p.length<3||p[2]<1)continue;let lon=p[0];if(lon>180)lon-=360;const ix=Math.max(0,Math.min(gw-1,Math.round(((lon+180)/360)*(gw-1))));const iy=Math.max(0,Math.min(gh-1,Math.round(((90-p[1])/180)*(gh-1))));const j=iy*gw+ix;if(p[2]>grid[j])grid[j]=p[2]}const img=new ImageData(gw,gh);for(let i=0;i<grid.length;i++){const c=ovationColor(grid[i]),o=i*4;img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=c[3]}return img}
+function ovationColor(p){if(p<8)return [0,0,0,0];const t=Math.min(1,(p-8)/70);if(t<0.45){const u=t/0.45;return [20,Math.round(140+u*80),30,Math.round(50+u*90)]}if(t<0.75){const u=(t-0.45)/0.3;return [Math.round(40+u*180),Math.round(220-u*20),Math.round(20+u*20),Math.round(140+u*40)]}const u=(t-0.75)/0.25;return [Math.round(220+u*35),Math.round(230+u*25),Math.round(80+u*140),210]}
+function paintOvation(coords){const gw=360,gh=181,grid=new Float32Array(gw*gh);for(let i=0;i<coords.length;i++){const p=coords[i];if(!p||p.length<3||p[2]<8||Math.abs(p[1])<22)continue;let lon=p[0];if(lon>180)lon-=360;const ix=Math.max(0,Math.min(gw-1,Math.round(((lon+180)/360)*(gw-1))));const iy=Math.max(0,Math.min(gh-1,Math.round(((90-p[1])/180)*(gh-1))));const j=iy*gw+ix;if(p[2]>grid[j])grid[j]=p[2]}const img=new ImageData(gw,gh);for(let i=0;i<grid.length;i++){const c=ovationColor(grid[i]),o=i*4;img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=c[3]}return img}
 function drawEarth(){
   const el=document.getElementById("earth"),box=el&&el.parentElement;if(!el||!box)return;
   const w=Math.max(320,box.clientWidth),h=Math.max(160,box.clientHeight),dpr=Math.min(2,window.devicePixelRatio||1);
