@@ -60,7 +60,7 @@ async function collect() {
   const now = new Date();
   const start = isoH(new Date(now.getTime() - 36 * 3600000));
   const stop = isoH(new Date(now.getTime() + 3600000));
-  const [mag, plasma, enlil, hp, kp, sc, kf, dst, hemi, aurora, hp30txt] = await Promise.all([
+  const [mag, plasma, enlil, hp, kp, sc, kf, dst, dstPred, hemi, aurora, hp30txt] = await Promise.all([
     hapi("solar_wind_mag_rt", "bt,bx_gsm,by_gsm,bz_gsm", start, stop),
     hapi("solar_wind_plasma_rt", "density,speed,temperature", start, stop),
     hapi("solar_wind_plasma_enlil_metoffice", "density,speed,bt", start, stop),
@@ -69,11 +69,12 @@ async function collect() {
     settled("https://services.swpc.noaa.gov/products/noaa-scales.json"),
     settled("https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"),
     settled("https://services.swpc.noaa.gov/products/kyoto-dst.json"),
+    settled("https://services.swpc.noaa.gov/json/geospace/geospace_dst_1_hour.json"),
     settled("https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt"),
     settled("https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"),
     settled("https://kp.gfz.de/fileadmin/files_for_gfz_cms/Hp30_ap30_nowcast.txt"),
   ]);
-  return { mag, plasma, enlil, hp, kp, sc, kf, dst, hemi, aurora, hp30txt, fetchedAt: Date.now() };
+  return { mag, plasma, enlil, hp, kp, sc, kf, dst, dstPred, hemi, aurora, hp30txt, fetchedAt: Date.now() };
 }
 
 async function loop() {
