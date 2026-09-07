@@ -1,35 +1,22 @@
-# SpaceWx Pi Image
+# SpaceWx
 
-Space-weather wall clock for Raspberry Pi 5. Aurora oval, clocks, NOAA numbers, TGO Europe stackplot, USGS North America stackplot. No ham-radio layers.
+Space-weather dashboard. Aurora oval, day/night terminator, clocks, NOAA numbers, TGO Europe stackplot, USGS North America stackplot. No ham-radio layers.
 
-Repo: https://github.com/jisler420/spacewx
+- Repo: https://github.com/jisler420/spacewx
+- Live: https://jisler420.github.io/spacewx/
+- Settings: https://jisler420.github.io/spacewx/settings.html
 
-## Status
+## Use it
 
-| Piece | State |
-|---|---|
-| Live display | `kiosk/index.html` |
-| Settings | `kiosk/settings.html` — US 5-digit ZIP |
-| Default location if ZIP skipped | Grand Forks, ND **58201** |
-| Flashable `.img.xz` | Not on Releases yet |
+Open the live link in any browser with internet. ZIP is under Settings. US 5-digit only. Skip / blank uses Grand Forks, ND **58201**. Change it anytime.
 
-## Try it now
+Or clone this repo and open `kiosk/index.html` locally.
 
-Open these in a desktop browser (needs internet):
+## On a Raspberry Pi
 
-- Live: https://github.com/jisler420/spacewx-pi-image/blob/main/kiosk/index.html (use Raw, or clone and open the file)
-- Settings: `kiosk/settings.html`
-
-Leave the HamClock microSD in the Pi until a Release `.img.xz` exists.
-
-## First-boot rules
-
-- ZIP only (US 5-digit).
-- Skip / blank → 58201 Grand Forks.
-- Change later in Settings.
-- No personal QTH is compiled into the image.
+No custom image. Stock Raspberry Pi OS + Chromium pointed at the live URL is enough.
 
 ## Feeds
 
-See `FEEDS.md`. Automatic failover. Stale/down is labeled on the dashboard.
-Europe H plot is the official TGO GIF, refreshed every 6 minutes.
+See `FEEDS.md`. Public NOAA / USGS / TGO sources. If a feed fails, the next URL is tried. Down/stale is labeled on the page.
+Europe H plot is the official TGO GIF, refreshed about every 6 minutes.
