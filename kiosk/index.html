@@ -375,8 +375,8 @@ function refreshKpis(){
 }
 setInterval(tick,1000);
 function scheduleOnMinute(fn){
-  const wait=60000-(Date.now()%60000);
-  setTimeout(function(){fn();setInterval(fn,60000)},wait);
+  const wait=30000-(Date.now()%30000);
+  setTimeout(function(){fn();setInterval(fn,30000)},wait);
 }
 scheduleOnMinute(function(){refreshKpis();drawEarth()});
 setInterval(loadImgs,360000);
