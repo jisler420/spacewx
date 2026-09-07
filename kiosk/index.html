@@ -3,78 +3,119 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{--bg:#070b12;--card:#121826;--line:#2a3650;--text:#eef3ff;--muted:#8b97b3;--acc:#5eead4;--ok:#34d399;--bad:#f87171}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Segoe UI,system-ui,sans-serif}
-a{color:var(--acc);text-decoration:none}
-header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:12px 18px;background:#0b1220;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
-.brand{font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--acc)}
-.wrap{max-width:1440px;margin:0 auto;padding:14px 16px 40px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Segoe UI,system-ui,sans-serif}
+a{color:var(--acc)}header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;padding:12px 16px;background:#0b1220;border-bottom:1px solid var(--line);position:sticky;top:0}
+.brand{font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--acc)}
+.wrap{max-width:1440px;margin:auto;padding:14px 16px 40px}
 .kpis{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:12px}
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(4,1fr)}}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}.kpi b{display:block;font-size:24px}.kpi span{color:var(--muted);font-size:11px;text-transform:uppercase}
-#map{height:420px;border-radius:12px;border:1px solid var(--line)}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px}.kpi b{display:block;font-size:22px}.kpi span{color:var(--muted);font-size:11px}
+#map{height:400px;border-radius:12px;border:1px solid var(--line)}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}@media(max-width:900px){.row{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
 .card h2{margin:0 0 8px;font-size:12px;color:var(--muted);text-transform:uppercase}
-.card img,#tgo,canvas.na{width:100%;display:block;border-radius:8px;background:#000}#tgo{background:#fff}canvas.na{height:240px;background:#0a0e18}
-.player{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
-.player button{background:#101827;color:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
-.player input{flex:1;min-width:120px}.muted{color:var(--muted);font-size:12px}.ok{color:var(--ok)}.down{color:var(--bad)}#kpForecast{white-space:pre-wrap}
+.card img,canvas{width:100%;display:block;border-radius:8px;background:#000}canvas{height:220px;background:#0a0e18}
+.muted{color:var(--muted);font-size:12px}.ok{color:var(--ok)}.down{color:var(--bad)}
+.player{display:flex;gap:8px;align-items:center;margin-top:8px}.player button{background:#101827;color:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px}.player input{flex:1}
 </style></head><body>
-<header><div class="brand">SpaceWx</div><div class="muted" id="utc">UTC</div><div class="muted" id="local">Local</div><div class="muted" id="placeLabel">Grand Forks, ND 58201</div><nav><a href="index.html">Live</a> · <a href="settings.html">Settings</a></nav></header>
+<header><div class="brand">SpaceWx</div><span class="muted" id="utc"></span><span class="muted" id="local"></span><span class="muted" id="placeLabel"></span><nav><a href="index.html">Live</a> · <a href="settings.html">Settings</a></nav></header>
 <div class="wrap">
 <div class="kpis">
 <div class="kpi"><span>Kp</span><b id="vKp">—</b></div>
 <div class="kpi"><span>R/S/G</span><b id="vRsg">—</b></div>
 <div class="kpi"><span>Bz</span><b id="vBz">—</b></div>
 <div class="kpi"><span>Dst</span><b id="vDst">—</b></div>
-<div class="kpi"><span>SFI</span><b id="vSfi">—</b></div>
+<div class="kpi"><span>GOES Hp</span><b id="vGoes">—</b></div>
 <div class="kpi"><span>Wind</span><b id="vWind">—</b></div>
 <div class="kpi"><span>X-ray</span><b id="vXray">—</b></div>
-<div class="kpi"><span>Hemi</span><b id="vHemi">—</b></div>
+<div class="kpi"><span>Kiruna K</span><b id="vKirK">—</b></div>
 </div>
 <div id="map"></div><div class="muted" id="mapStatus">map</div>
 <div class="row">
-<div class="card"><h2>Kiruna magnetometer · IRF</h2><img id="kiruna" alt="Kiruna IRF"><div class="muted"><a href="https://www2.irf.se/Observatory/?link=Magnetometers" target="_blank" rel="noopener">IRF Observatory</a> · no public JSON, official PNG</div></div>
-<div class="card"><h2>Dst · Kyoto WDC</h2><img id="dstPlot" alt="Kyoto Dst"><div class="muted" id="dstNote">NOAA JSON for the number; Kyoto plot below. <a href="https://wdc.kugi.kyoto-u.ac.jp/dstdir/index.html" target="_blank" rel="noopener">Kyoto Dst</a></div></div>
+<div class="card"><h2>Kiruna · IRF live plot</h2><img id="kiruna" alt="Kiruna"><div class="muted">Official IRF PNG (SWL uses this station). No public JSON.</div></div>
+<div class="card"><h2>Dst · Kyoto via NOAA JSON + WDC plot</h2><img id="dstPlot" alt="Dst"><canvas id="dstCanvas"></canvas><div class="muted">Number from NOAA kyoto-dst.json. Plot from Kyoto WDC.</div></div>
 </div>
-<div class="row"><div class="card"><h2>Solar wind 24h</h2><img id="sw24" alt="solar wind"></div><div class="card"><h2>Overview</h2><img id="overview" alt="overview"></div></div>
-<div class="row"><div class="card"><h2>Geospace 3h</h2><img id="geo3h" alt="geo 3h"></div><div class="card"><h2>Geospace 1d</h2><img id="geo1d" alt="geo 1d"></div></div>
 <div class="row">
-<div class="card"><h2>GFZ Hpo Enlil</h2><img id="hpo" alt="hpo"></div>
-<div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil"><div class="player"><button type="button" id="enlilPlay">Play</button><input type="range" id="enlilScrub" min="0" max="0" value="0"><span class="muted" id="enlilStamp">loading</span></div></div>
+<div class="card"><h2>CANMOS Canada · official 24h</h2><a href="https://geomag.nrcan.gc.ca/plot-tracee/ssp-1-en.php" target="_blank" rel="noopener"><img id="canmos" alt="CANMOS"></a><div class="muted">NRCan last-24h summary. <a href="https://geomag.nrcan.gc.ca/plot-tracee/ssp-1-en.php" target="_blank" rel="noopener">Open full plot</a></div></div>
+<div class="card"><h2>Hobart · BOM SWS</h2><img id="hobart" alt="Hobart"><div class="muted">Australian live magnetogram GIF.</div></div>
 </div>
-<div class="row"><div class="card"><h2>Oval north</h2><img id="ovN" alt="north"></div><div class="card"><h2>Oval south</h2><img id="ovS" alt="south"></div></div>
-<div class="row"><div class="card"><h2>TGO H Europe</h2><img id="tgo" alt="tgo" referrerpolicy="no-referrer"><div class="muted" id="tgoStatus">TGO</div></div><div class="card"><h2>USGS X</h2><canvas class="na" id="naPlot"></canvas><div class="muted" id="naStatus">USGS</div></div></div>
-<div class="card" style="margin-top:12px"><h2>Kp forecast</h2><div id="kpForecast">—</div><div class="muted" id="feedStatus">feeds</div><div class="muted" id="homeAurora"></div></div>
+<div class="card" style="margin-top:12px"><h2>GOES magnetometer Hp · NOAA JSON</h2><canvas id="goesPlot"></canvas><div class="muted" id="goesStatus">GOES</div></div>
+<div class="row"><div class="card"><h2>Solar wind 24h</h2><img id="sw24" alt="sw"></div><div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil"><div class="player"><button id="enlilPlay" type="button">Play</button><input id="enlilScrub" type="range" min="0" max="0" value="0"><span class="muted" id="enlilStamp"></span></div></div></div>
+<div class="row"><div class="card"><h2>TGO Europe H</h2><img id="tgo" alt="tgo" referrerpolicy="no-referrer" style="background:#fff"></div><div class="card"><h2>USGS X</h2><canvas id="naPlot"></canvas></div></div>
+<div class="muted" id="feedStatus">feeds</div><div class="muted" id="homeAurora"></div>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const FEEDS={kp:["https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"],dst:["https://services.swpc.noaa.gov/products/kyoto-dst.json"],sfi:["https://services.swpc.noaa.gov/products/summary/10cm-flux.json"],wind:["https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json"],mag:["https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json"],scales:["https://services.swpc.noaa.gov/products/noaa-scales.json"],aurora:["https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"],kpf:["https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"],xray:["https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json"],hemi:["https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt"]};
-const TGO="https://flux.phys.uit.no/cgi-bin/mkstackplot.cgi?GifOnly&&comp=H&nor=&Sync=";
-const IMGS={sw24:"https://services.swpc.noaa.gov/images/ace-mag-swepam-24-hour.gif",overview:"https://services.swpc.noaa.gov/images/swx-overview-large.gif",geo3h:"https://services.swpc.noaa.gov/images/geospace/geospace_3_hour.png",geo1d:"https://services.swpc.noaa.gov/images/geospace/geospace_1_day.png",hpo:"https://isdc-data.gfz.de/geomagnetism/HpoForecast/v0102/output/Hpo/png/hpo_forecast_enlil.png",ovN:"https://services.swpc.noaa.gov/images/animations/ovation/north/latest.jpg",ovS:"https://services.swpc.noaa.gov/images/animations/ovation/south/latest.jpg",kiruna:"https://www2.irf.se/maggraphs/kiraver.png"};
-const NA=["BRW","CMO","BOU","FRD"],DEFAULT={zip:"58201",lat:47.901,lon:-97.0446,place:"Grand Forks, ND",tz:"America/Chicago"};
+const DEFAULT={zip:"58201",lat:47.901,lon:-97.0446,place:"Grand Forks, ND",tz:"America/Chicago"};
 function loadCfg(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem("spacewx-cfg")||"{}"))}catch(e){return Object.assign({},DEFAULT)}}let cfg=loadCfg();
 async function grab(u){const r=await fetch(u,{cache:"no-store"});if(!r.ok)throw new Error(r.status);return ((r.headers.get("content-type")||"").includes("json")||u.endsWith(".json"))?r.json():r.text()}
-async function first(list){let e;for(const u of list){try{return{data:await grab(u)}}catch(err){e=err}}throw e}
 const last=a=>Array.isArray(a)?a[a.length-1]:a;
-function xrayClass(f){f=Number(f);if(!isFinite(f))return "—";if(f>=1e-4)return "X"+(f/1e-4).toFixed(1);if(f>=1e-5)return "M"+(f/1e-5).toFixed(1);if(f>=1e-6)return "C"+(f/1e-6).toFixed(1);if(f>=1e-7)return "B"+(f/1e-7).toFixed(1);return "A"+(f/1e-8).toFixed(1)}
 function bust(u){return u+(u.includes("?")?"&":"?")+"t="+Date.now()}
-function dstPlotUrl(){const d=new Date();const yy=String(d.getUTCFullYear()).slice(2);const mm=String(d.getUTCMonth()+1).padStart(2,"0");return "https://wdc.kugi.kyoto-u.ac.jp/dst_realtime/presentmonth/dst"+yy+mm+".png"}
-function loadOfficial(){Object.entries(IMGS).forEach(([id,url])=>{const el=document.getElementById(id);if(el){el.onerror=()=>el.style.opacity=".4";el.src=bust(url)}});if(dstPlot){dstPlot.onerror=()=>dstNote.textContent="Kyoto plot DOWN — Dst number still from NOAA JSON";dstPlot.src=bust(dstPlotUrl())}}
-const ENLIL_DIR="https://services.swpc.noaa.gov/images/animations/enlil/";let enlilFrames=[],enlilI=0,enlilTimer=null;
-function enlilShow(i){if(!enlilFrames.length)return;enlilI=(i+enlilFrames.length)%enlilFrames.length;enlil.src=enlilFrames[enlilI];enlilScrub.value=enlilI;const m=enlilFrames[enlilI].match(/(\d{8}T\d{6})/);enlilStamp.textContent=(m?m[1].replace("T"," ")+"Z":"")+" "+(enlilI+1)+"/"+enlilFrames.length}
-function enlilPlayToggle(){if(enlilTimer){clearInterval(enlilTimer);enlilTimer=null;enlilPlay.textContent="Play";return}enlilPlay.textContent="Pause";enlilTimer=setInterval(()=>enlilShow(enlilI+1),180)}
-async function loadEnlilPlayer(){try{const html=await grab(ENLIL_DIR);enlilFrames=[...String(html).matchAll(/href="(enlil_[^"]+\.jpg)"/g)].map(m=>ENLIL_DIR+m[1]);enlilFrames=[...new Set(enlilFrames)].sort();if(!enlilFrames.length)throw 0;enlilScrub.max=enlilFrames.length-1;enlilScrub.oninput=()=>{if(enlilTimer)enlilPlayToggle();enlilShow(+enlilScrub.value)};enlilPlay.onclick=enlilPlayToggle;enlilShow(0);enlilPlayToggle()}catch(e){enlilStamp.textContent="DOWN";enlil.src=bust(ENLIL_DIR+"latest.jpg")}}
+function spark(canvas,vals,color){const c=canvas,w=c.width=c.clientWidth*2||800,h=c.height=440,ctx=c.getContext("2d");ctx.fillStyle="#0a0e18";ctx.fillRect(0,0,w,h);if(!vals||vals.length<2)return;const min=Math.min(...vals),max=Math.max(...vals),span=max-min||1;ctx.strokeStyle=color||"#5eead4";ctx.lineWidth=2;ctx.beginPath();vals.forEach((v,i)=>{const x=i/(vals.length-1)*w,y=h-20-((v-min)/span)*(h-40);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()}
+function loadImgs(){
+  kiruna.src=bust("https://www2.irf.se/maggraphs/kiraver.png");
+  hobart.src=bust("https://www.sws.bom.gov.au/Images/Geophysical/Latest%20Conditions/Magnetograms/Hobart.gif");
+  sw24.src=bust("https://services.swpc.noaa.gov/images/ace-mag-swepam-24-hour.gif");
+  const d=new Date(),yy=String(d.getUTCFullYear()).slice(2),mm=String(d.getUTCMonth()+1).padStart(2,"0");
+  dstPlot.src=bust("https://wdc.kugi.kyoto-u.ac.jp/dst_realtime/presentmonth/dst"+yy+mm+".png");
+  canmos.onerror=()=>{canmos.alt="open official CANMOS plot";canmos.style.display="none"};
+  canmos.src=bust("https://geomag.nrcan.gc.ca/auto_generated_products/stackplot_e.png");
+  tgo.src="https://flux.phys.uit.no/cgi-bin/mkstackplot.cgi?GifOnly&&comp=H&nor=&Sync=&t="+Date.now();
+}
+async function loadGoes(){
+  try{
+    const j=await grab("https://services.swpc.noaa.gov/json/goes/primary/magnetometers-6-hour.json");
+    const rows=Array.isArray(j)?j:[];
+    const hp=rows.map(r=>Number(r.Hp)).filter(isFinite);
+    spark(goesPlot,hp,"#fbbf24");
+    const lastR=rows[rows.length-1]||{};
+    vGoes.textContent=isFinite(lastR.Hp)?Number(lastR.Hp).toFixed(1):"—";
+    goesStatus.textContent="GOES-"+(lastR.satellite||"?")+" Hp · NOAA JSON";
+  }catch(e){goesStatus.textContent="GOES JSON DOWN";vGoes.textContent="DOWN"}
+}
+async function loadDstSeries(){
+  try{
+    const j=await grab("https://services.swpc.noaa.gov/products/kyoto-dst.json");
+    const rows=Array.isArray(j)?j.slice(-48):[];
+    const vals=rows.map(r=>Number(r.dst)).filter(isFinite);
+    spark(dstCanvas,vals,"#60a5fa");
+    const d=Number((last(j)||{}).dst);vDst.textContent=isFinite(d)?Math.round(d):"—";
+  }catch(e){vDst.textContent="DOWN"}
+}
+async function loadKirK(){
+  try{
+    const t=await grab("https://www2.irf.se/maggraphs/preliminary_real_time_k_index");
+    const m=String(t).match(/([0-9]+(?:\.[0-9]+)?)/);vKirK.textContent=m?m[1]:"—";
+  }catch(e){vKirK.textContent="—"}
+}
+async function refreshWx(){
+  try{
+    const kp=await grab("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json");
+    const mag=await grab("https://services.swpc.noaa.gov/products/summary/solar-wind-mag-field.json");
+    const wind=await grab("https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json");
+    const sc=await grab("https://services.swpc.noaa.gov/products/noaa-scales.json");
+    const xr=await grab("https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json");
+    const k=Number((last(kp)||{}).Kp);vKp.textContent=isFinite(k)?k.toFixed(1):"—";
+    const bz=Number((last(mag)||mag).bz_gsm);vBz.textContent=isFinite(bz)?bz.toFixed(1):"—";
+    const w=Number((last(wind)||wind).proton_speed);vWind.textContent=isFinite(w)?Math.round(w)+" km/s":"—";
+    const n=sc["0"]||{};vRsg.textContent=`R${n.R&&n.R.Scale||0} S${n.S&&n.S.Scale||0} G${n.G&&n.G.Scale||0}`;
+    const rows=Array.isArray(xr)?xr.filter(r=>String(r.energy||"").includes("0.1-0.8")):[];
+    const f=Number((last(rows)||last(xr)||{}).flux);
+    vXray.textContent=!isFinite(f)?"—":f>=1e-4?"X"+(f/1e-4).toFixed(1):f>=1e-5?"M"+(f/1e-5).toFixed(1):f>=1e-6?"C"+(f/1e-6).toFixed(1):f>=1e-7?"B"+(f/1e-7).toFixed(1):"A"+(f/1e-8).toFixed(1);
+    feedStatus.textContent="live";feedStatus.className="muted ok";
+  }catch(e){feedStatus.textContent="DOWN"}
+}
 const map=L.map("map",{worldCopyJump:true}).setView([cfg.lat,cfg.lon],3);
 L.tileLayer("https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",{maxNativeZoom:8,maxZoom:6}).addTo(map);
 L.circleMarker([cfg.lat,cfg.lon],{radius:7,color:"#fb923c",fillColor:"#fb923c",fillOpacity:1}).addTo(map);
-let auroraLayer=null,nightLayer=null,termLine=null;
+let nightLayer=null,termLine=null,auroraLayer=null;
 function drawNight(){const d=new Date(),start=Date.UTC(d.getUTCFullYear(),0,1),day=(d-start)/864e5+1,decl=-23.44*Math.cos((2*Math.PI/365)*(day+10)),min=d.getUTCHours()*60+d.getUTCMinutes(),lngSun=180-min/4,rad=Math.PI/180,line=[];for(let lng=-180;lng<=180;lng+=2){let lat=0,t=Math.tan(decl*rad);if(Math.abs(t)>1e-6)lat=Math.atan(-Math.cos((lng-lngSun)*rad)/t)/rad;line.push([Math.max(-89.9,Math.min(89.9,lat)),lng])}const night=decl>=0?line.concat([[-90,180],[-90,-180]]):line.concat([[90,180],[90,-180]]);if(nightLayer)map.removeLayer(nightLayer);if(termLine)map.removeLayer(termLine);nightLayer=L.polygon(night,{stroke:false,fillColor:"#02040a",fillOpacity:.55,interactive:false}).addTo(map);termLine=L.polyline(line,{color:"#e5e7eb",weight:2,interactive:false}).addTo(map)}
-async function refreshWx(){try{const kp=await first(FEEDS.kp),dst=await first(FEEDS.dst),sfi=await first(FEEDS.sfi),mag=await first(FEEDS.mag),wind=await first(FEEDS.wind),sc=await first(FEEDS.scales);const k=Number((last(kp.data)||{}).Kp),d=Number((last(dst.data)||{}).dst),bz=Number((last(mag.data)||mag.data).bz_gsm),w=Number((last(wind.data)||wind.data).proton_speed),flux=Number((sfi.data.flux!=null?sfi.data.flux:last(sfi.data)&&last(sfi.data).flux)),n=sc.data["0"]||{};vKp.textContent=isFinite(k)?k.toFixed(1):"—";vRsg.textContent=`R${n.R&&n.R.Scale||0} S${n.S&&n.S.Scale||0} G${n.G&&n.G.Scale||0}`;vBz.textContent=isFinite(bz)?bz.toFixed(1):"—";vDst.textContent=isFinite(d)?Math.round(d):"—";vSfi.textContent=isFinite(flux)?Math.round(flux):"—";vWind.textContent=isFinite(w)?Math.round(w)+" km/s":"—";feedStatus.textContent="live";feedStatus.className="muted ok"}catch(e){feedStatus.textContent="DOWN"}try{const xr=await first(FEEDS.xray);const rows=Array.isArray(xr.data)?xr.data.filter(r=>String(r.energy||"").includes("0.1-0.8")):[];vXray.textContent=xrayClass((last(rows)||last(xr.data)||{}).flux)}catch(e){vXray.textContent="DOWN"}try{const h=await first(FEEDS.hemi);const lines=String(h.data).trim().split(/\n/).filter(l=>l&&!l.startsWith("#"));const p=lines.pop().trim().split(/\s+/);vHemi.textContent=p[p.length-2]+" / "+p[p.length-1]}catch(e){vHemi.textContent="DOWN"}try{const kf=await first(FEEDS.kpf);const rows=Array.isArray(kf.data)?kf.data.filter(r=>r.observed!=="observed").slice(0,6):[];kpForecast.textContent=rows.map(r=>`${String(r.time_tag||"").slice(5,16)} Kp ${r.kp??r.Kp??""}`).join("\n")}catch(e){kpForecast.textContent="DOWN"}}
-async function loadAurora(){try{const o=await first(FEEDS.aurora);const coords=o.data.coordinates||o.data;if(auroraLayer)map.removeLayer(auroraLayer);auroraLayer=L.layerGroup();let best=0;for(const p of coords){if(!p||p[2]<8)continue;const lon=p[0]>180?p[0]-360:p[0];L.circleMarker([p[1],lon],{radius:4,stroke:false,fillColor:"#22c55e",fillOpacity:.22,interactive:false}).addTo(auroraLayer);const a=p[1]-cfg.lat,b=lon-cfg.lon;if(a*a+b*b<16)best=Math.max(best,p[2])}auroraLayer.addTo(map);homeAurora.textContent="aurora "+best+"%";mapStatus.textContent="night + OVATION"}catch(e){mapStatus.textContent="aurora DOWN"}}
-function loadTgo(){tgo.src=TGO+"&t="+Date.now();tgo.onload=()=>tgoStatus.textContent="TGO live";tgo.onerror=()=>tgoStatus.textContent="TGO DOWN"}
-async function loadNA(){const c=naPlot,w=c.width=c.clientWidth*2||800,h=c.height=480,ctx=c.getContext("2d");ctx.fillStyle="#0a0e18";ctx.fillRect(0,0,w,h);try{const colors=["#f87171","#60a5fa","#4ade80","#fbbf24"];let i=0;for(const id of NA){const j=await grab("https://geomag.usgs.gov/ws/data/?id="+id+"&format=json");const series=(j.values||[]).find(v=>v.id==="X"||v.id==="H")||(j.values||[])[0];const vals=(series&&series.values||[]).filter(v=>typeof v==="number");if(vals.length<4)continue;const step=Math.max(1,Math.floor(vals.length/180)),sampled=vals.filter((_,n)=>n%step===0),min=Math.min(...sampled),max=Math.max(...sampled),span=max-min||1,band=h/NA.length,y0=band*(i+.55);ctx.strokeStyle=colors[i%4];ctx.beginPath();sampled.forEach((v,n)=>{const x=n/(sampled.length-1)*w,y=y0-((v-min)/span)*(band*.32);n?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle="#8b97b8";ctx.fillText(id,8,y0-band*.28);i++}naStatus.textContent="USGS "+NA.join(" ")}catch(e){naStatus.textContent="USGS DOWN"}}
+async function loadAurora(){try{const o=await grab("https://services.swpc.noaa.gov/json/ovation_aurora_latest.json");const coords=o.coordinates||o;if(auroraLayer)map.removeLayer(auroraLayer);auroraLayer=L.layerGroup();let best=0;for(const p of coords){if(!p||p[2]<8)continue;const lon=p[0]>180?p[0]-360:p[0];L.circleMarker([p[1],lon],{radius:4,stroke:false,fillColor:"#22c55e",fillOpacity:.22,interactive:false}).addTo(auroraLayer);const a=p[1]-cfg.lat,b=lon-cfg.lon;if(a*a+b*b<16)best=Math.max(best,p[2])}auroraLayer.addTo(map);homeAurora.textContent="aurora "+best+"%";mapStatus.textContent="night + OVATION"}catch(e){mapStatus.textContent="aurora DOWN"}}
+async function loadNA(){const c=naPlot,w=c.width=c.clientWidth*2||800,h=c.height=440,ctx=c.getContext("2d");ctx.fillStyle="#0a0e18";ctx.fillRect(0,0,w,h);const colors=["#f87171","#60a5fa","#4ade80","#fbbf24"];let i=0;for(const id of ["BRW","CMO","BOU","FRD"]){try{const j=await grab("https://geomag.usgs.gov/ws/data/?id="+id+"&format=json");const series=(j.values||[]).find(v=>v.id==="X"||v.id==="H")||(j.values||[])[0];const vals=(series&&series.values||[]).filter(v=>typeof v==="number");if(vals.length<4)continue;const step=Math.max(1,Math.floor(vals.length/180)),sampled=vals.filter((_,n)=>n%step===0),min=Math.min(...sampled),max=Math.max(...sampled),span=max-min||1,band=h/4,y0=band*(i+.55);ctx.strokeStyle=colors[i];ctx.beginPath();sampled.forEach((v,n)=>{const x=n/(sampled.length-1)*w,y=y0-((v-min)/span)*(band*.32);n?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle="#8b97b8";ctx.fillText(id,8,y0-band*.28);i++}catch(e){}}}
+const ENLIL_DIR="https://services.swpc.noaa.gov/images/animations/enlil/";let frames=[],fi=0,timer=null;
+function show(n){if(!frames.length)return;fi=(n+frames.length)%frames.length;enlil.src=frames[fi];enlilScrub.value=fi;enlilStamp.textContent=(fi+1)+"/"+frames.length}
+async function loadEnlil(){try{const html=await grab(ENLIL_DIR);frames=[...String(html).matchAll(/href="(enlil_[^"]+\.jpg)"/g)].map(m=>ENLIL_DIR+m[1]);frames=[...new Set(frames)].sort();enlilScrub.max=frames.length-1;enlilScrub.oninput=()=>{if(timer){clearInterval(timer);timer=null;enlilPlay.textContent="Play"}show(+enlilScrub.value)};enlilPlay.onclick=()=>{if(timer){clearInterval(timer);timer=null;enlilPlay.textContent="Play"}else{enlilPlay.textContent="Pause";timer=setInterval(()=>show(fi+1),180)}};show(0);enlilPlay.click()}catch(e){enlil.src=bust(ENLIL_DIR+"latest.jpg")}}
 function tick(){const n=new Date();utc.textContent="UTC "+n.toISOString().slice(11,19);try{local.textContent="Local "+n.toLocaleTimeString("en-US",{timeZone:cfg.tz,hour12:false})}catch(e){}placeLabel.textContent=(cfg.place||"")+" "+(cfg.zip||"")}
-drawNight();tick();refreshWx();loadAurora();loadTgo();loadNA();loadOfficial();loadEnlilPlayer();
-setInterval(tick,1000);setInterval(drawNight,60000);setInterval(refreshWx,60000);setInterval(loadOfficial,360000);setInterval(loadTgo,360000);setInterval(loadNA,360000);setInterval(loadAurora,300000);
+drawNight();tick();refreshWx();loadDstSeries();loadGoes();loadKirK();loadImgs();loadAurora();loadNA();loadEnlil();
+setInterval(tick,1000);setInterval(drawNight,60000);setInterval(refreshWx,60000);setInterval(loadGoes,180000);setInterval(loadDstSeries,180000);setInterval(loadImgs,360000);
 </script></body></html>
