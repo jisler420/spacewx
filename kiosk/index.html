@@ -90,7 +90,7 @@ th:first-child,td:first-child{text-align:left}
 </main>
 </div>
 <script>
-const DEFAULT={zip:"58201",lat:47.901,lon:-97.0446,place:"Grand Forks, ND",tz:"America/Chicago"};
+const DEFAULT={zip:"",lat:30.02449,lon:-97.9072,place:"30.02449, -97.90720",tz:"America/Chicago"};
 const HOURS=2.5;
 function loadCfg(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem("spacewx-cfg")||"{}"))}catch(e){return Object.assign({},DEFAULT)}}
 const cfg=loadCfg();
