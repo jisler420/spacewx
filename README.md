@@ -2,7 +2,7 @@
 
 Space-weather wall clock for Raspberry Pi 5. Aurora oval, clocks, NOAA numbers, TGO Europe stackplot, USGS North America stackplot. No ham-radio layers.
 
-Repo: https://github.com/jisler420/spacewx-pi-image
+Repo: https://github.com/jisler420/spacewx
 
 ## Status
 
