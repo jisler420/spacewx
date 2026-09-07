@@ -58,7 +58,7 @@ th:first-child,td:first-child{text-align:left}
     <div class="kpi"><span>Observer</span><b id="railUtc">-</b><div class="muted" id="placeLabel"></div><div class="muted" id="railLocal"></div><div class="muted" id="updatedAt">Updated —</div></div>
     <div class="kpi"><span>Aurora visibility</span><b id="vAurora">-</b><div class="muted">At this location · OVATION</div></div>
     <div class="kpi"><span>NOAA scales</span><b id="vRsg">-</b><div class="muted">R · S · G</div></div>
-    <div class="kpi"><span>Disturbance Storm Time Index</span><b id="vDst">-</b><div class="muted">Kyoto WDC</div></div>
+    <div class="kpi"><span>Disturbance Storm Time Index</span><b id="vDst">-</b><div class="muted">Kyoto now · NOAA Geospace pred</div></div>
   </div>
   <div class="kpis" style="grid-template-columns:repeat(2,1fr)">
     <div class="kpi"><span>Hemispheric power now N/S</span><b id="vHemi">-</b></div>
@@ -95,7 +95,7 @@ const DEFAULT={zip:"",lat:30.02449,lon:-97.9072,place:"30.02449, -97.90720",tz:"
 const HOURS=2.5;
 function loadCfg(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem("spacewx-cfg")||"{}"))}catch(e){return Object.assign({},DEFAULT)}}
 const cfg=loadCfg();
-const cache={wind:[],mag:[],goes:[],dst:[],hp30:[],kp:[]};
+const cache={wind:[],mag:[],goes:[],dst:[],dstPred:[],hp30:[],kp:[]};
 async function grab(u){const r=await fetch(u,{cache:"no-store"});if(!r.ok) throw new Error(String(r.status));const ct=r.headers.get("content-type")||"";return (ct.includes("json")||u.endsWith(".json"))?r.json():r.text()}
 async function settled(u){try{return await grab(u)}catch(e){return null}}
 const last=a=>Array.isArray(a)&&a.length?a[a.length-1]:{};
@@ -206,7 +206,15 @@ function drawSw(){
   const startH=new Date(t0);startH.setUTCMinutes(0,0,0);
   for(let t=startH.getTime();t<=t1;t+=3600000){const dt=new Date(t);ctx.fillText(dt.getUTCHours()===0?dt.toISOString().slice(5,10):String(dt.getUTCHours()).padStart(2,"0"),xAt(t),cssH-6)}
 }
-function drawDst(){const d=Number(last(cache.dst).dst);vDst.textContent=isFinite(d)?Math.round(d)+" nT":"-";tone(vDst,"dst",d)}
+function drawDst(){
+  const d=Number(last(cache.dst).dst);
+  const p=Number(last(cache.dstPred||[]).dst);
+  let t="-";
+  if(isFinite(d)) t=Math.round(d)+" nT";
+  if(isFinite(p)) t+=(t==="-"?"":"  ")+"pred "+Math.round(p);
+  vDst.textContent=t;
+  tone(vDst,"dst",isFinite(p)?p:d);
+}
 function drawHp30(){const d=Number(last(cache.hp30).hp30);if(isFinite(d)){vHp30.textContent=d.toFixed(1);tone(vHp30,"hp",d)}else vHp30.textContent="-"}
 function drawAll(){drawWindImf()}
 async function loadWindImf(){
@@ -230,11 +238,12 @@ async function loadWindImf(){
   markUpdated();
 }
 async function loadWx(){
-  const [kp,sc,kf,dst,hemi]=await Promise.all([
+  const [kp,sc,kf,dst,dstPred,hemi]=await Promise.all([
     settled("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"),
     settled("https://services.swpc.noaa.gov/products/noaa-scales.json"),
     settled("https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"),
     settled("https://services.swpc.noaa.gov/products/kyoto-dst.json"),
+    settled("https://services.swpc.noaa.gov/json/geospace/geospace_dst_1_hour.json"),
     settled("https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt")
   ]);
   const k=Number((last(kp)||{}).Kp); if(isFinite(k)){vKp.textContent=k.toFixed(1);tone(vKp,"kp",k)}
@@ -255,7 +264,9 @@ async function loadWx(){
     }
     kpForecast.innerHTML=html+"</table>";
   }
-  if(Array.isArray(dst)){cache.dst=dst.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag));drawDst()}
+  if(Array.isArray(dst)){cache.dst=dst.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
+  if(Array.isArray(dstPred)){cache.dstPred=dstPred.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
+  if(Array.isArray(dst)||Array.isArray(dstPred)) drawDst();
   if(hemi){const lines=String(hemi).trim().split(/\n/).filter(l=>l&&!l.startsWith("#")).map(l=>l.trim().split(/\s+/)).filter(p=>p.length>=4);const last3=lines.slice(-3),cur=lines[lines.length-1]||[];const avg=i=>last3.length?last3.reduce((s,p)=>s+(+p[i]||0),0)/last3.length:NaN;vHemi.textContent=(cur[2]||"-")+" / "+(cur[3]||"-")+" GW";vHemiAvg.textContent=(isFinite(avg(2))?Math.round(avg(2)):"-")+" / "+(isFinite(avg(3))?Math.round(avg(3)):"-")+" GW";tone(vHemi,"hemi",Math.max(+cur[2]||0,+cur[3]||0));tone(vHemiAvg,"hemi",Math.max(avg(2)||0,avg(3)||0))}
   const ok=[kp,sc,kf,dst,hemi].filter(Boolean).length;feedStatus.textContent=ok>=4?"live":ok?"partial":"DOWN";feedStatus.className=ok>=4?"ok":ok?"muted":"down";drawSw();
 }
@@ -337,7 +348,9 @@ function applyWorkerData(data){
       }
       kpForecast.innerHTML=html+"</table>";
     }
-    if(Array.isArray(dst)){cache.dst=dst.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag));drawDst()}
+    if(Array.isArray(dst)){cache.dst=dst.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
+    if(Array.isArray(data.dstPred)){cache.dstPred=data.dstPred.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
+    if(Array.isArray(dst)||Array.isArray(data.dstPred)) drawDst();
     if(hemi){const lines=String(hemi).trim().split(/\n/).filter(l=>l&&!l.startsWith("#")).map(l=>l.trim().split(/\s+/)).filter(p=>p.length>=4);const last3=lines.slice(-3),cur=lines[lines.length-1]||[];const avg=i=>last3.length?last3.reduce((s,p)=>s+(+p[i]||0),0)/last3.length:NaN;vHemi.textContent=(cur[2]||"-")+" / "+(cur[3]||"-")+" GW";vHemiAvg.textContent=(isFinite(avg(2))?Math.round(avg(2)):"-")+" / "+(isFinite(avg(3))?Math.round(avg(3)):"-")+" GW";tone(vHemi,"hemi",Math.max(+cur[2]||0,+cur[3]||0));tone(vHemiAvg,"hemi",Math.max(avg(2)||0,avg(3)||0))}
     const ok=[kp,sc,kf,dst,hemi].filter(Boolean).length;feedStatus.textContent=ok>=4?"live":ok?"partial":"DOWN";feedStatus.className=ok>=4?"ok":ok?"muted":"down";
   }
