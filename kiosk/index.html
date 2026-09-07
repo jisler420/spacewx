@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SpaceWx</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>:root{--bg:#070b12;--card:#121826;--line:#2a3650;--text:#eef3ff;--muted:#8b97b3;--acc:#5eead4;--ok:#34d399;--bad:#f87171;--rail:#0b1220}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Segoe UI,system-ui,sans-serif}a{color:var(--acc);text-decoration:none}header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--rail);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}.brand{font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}.shell{display:grid;grid-template-columns:minmax(0,1fr) 280px;max-width:1680px;margin:0 auto}@media(max-width:1100px){.shell{grid-template-columns:1fr}}.main{padding:14px 16px 48px}.rail{background:var(--rail);border-left:1px solid var(--line);padding:14px}.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:12px}@media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}}.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}.kpi b{display:block;font-size:22px}.kpi span{color:var(--muted);font-size:11px;text-transform:uppercase}#map{aspect-ratio:2/1;width:100%;border-radius:12px;border:1px solid var(--line);margin-bottom:8px}.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}@media(max-width:980px){.cols{grid-template-columns:1fr}}.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}.card h2{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}.card img,canvas{width:100%;display:block;border-radius:8px;background:#000}canvas.chart{height:210px;background:#0a0e18}.big{font-size:28px;font-weight:700}.muted{color:var(--muted);font-size:12px}.ok{color:var(--ok)}.down{color:var(--bad)}.player{display:flex;gap:8px;align-items:center;margin-top:8px}.player button{background:#101827;color:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}.player input{flex:1}.rail .card{margin-bottom:10px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;border-bottom:1px solid #1d2738;text-align:center}th:first-child,td:first-child{text-align:left}</style></head>
+<style>:root{--bg:#070b12;--card:#121826;--line:#2a3650;--text:#eef3ff;--muted:#8b97b3;--acc:#5eead4;--ok:#34d399;--bad:#f87171;--rail:#0b1220}*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Segoe UI,system-ui,sans-serif}a{color:var(--acc);text-decoration:none}header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--rail);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}.brand{font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}.shell{display:grid;grid-template-columns:minmax(0,1fr) 280px;max-width:1680px;margin:0 auto}@media(max-width:1100px){.shell{grid-template-columns:1fr}}.main{padding:14px 16px 48px}.rail{background:var(--rail);border-left:1px solid var(--line);padding:14px}.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:12px}@media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}}.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}.kpi b{display:block;font-size:22px}.kpi span{color:var(--muted);font-size:11px;text-transform:uppercase}.mapbox{position:relative;width:100%;aspect-ratio:2/1;border-radius:12px;border:1px solid var(--line);overflow:hidden;margin-bottom:8px;background:#000}#map{position:absolute;inset:0;width:100%;height:100%}.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}@media(max-width:980px){.cols{grid-template-columns:1fr}}.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}.card h2{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}.card img,canvas{width:100%;display:block;border-radius:8px;background:#000}canvas.chart{height:210px;background:#0a0e18}.big{font-size:28px;font-weight:700}.muted{color:var(--muted);font-size:12px}.ok{color:var(--ok)}.down{color:var(--bad)}.player{display:flex;gap:8px;align-items:center;margin-top:8px}.player button{background:#101827;color:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}.player input{flex:1}.rail .card{margin-bottom:10px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px 4px;border-bottom:1px solid #1d2738;text-align:center}th:first-child,td:first-child{text-align:left}</style></head>
 <body>
 <header><div class="brand">SpaceWx</div><div class="muted" id="utc">UTC</div><div class="muted" id="local">Local</div><nav><a href="index.html">Live</a> · <a href="settings.html">Settings</a></nav></header>
 <div class="shell"><main class="main">
 <div class="kpis" style="grid-template-columns:repeat(2,1fr)"><div class="kpi"><span>Hemispheric power now N/S</span><b id="vHemi">-</b></div><div class="kpi"><span>15-min average N/S</span><b id="vHemiAvg">-</b></div></div>
 <div class="kpis"><div class="kpi"><span>Kp now</span><b id="vKp">-</b></div><div class="kpi"><span>Speed</span><b id="vWind">-</b></div><div class="kpi"><span>Density</span><b id="vDen">-</b></div><div class="kpi"><span>IMF Bt</span><b id="vBt">-</b></div><div class="kpi"><span>IMF Bz</span><b id="vBz">-</b></div><div class="kpi"><span>Hp30</span><b id="vHp30">-</b></div></div>
-<div id="map"></div><div class="muted" id="mapStatus">whole Earth view</div>
+<div class="mapbox"><div id="map"></div></div><div class="muted" id="mapStatus">whole Earth view</div>
 <div class="card" style="margin:12px 0"><h2>Kp forecast 3-day calendar</h2><div id="kpForecast" class="muted">-</div></div>
 <div class="cols">
 <div class="card"><h2>Solar wind speed km/s</h2><canvas class="chart" id="spdPlot"></canvas><div class="muted">Last 2.5 hours UTC</div></div>
@@ -121,19 +121,20 @@ async function loadHp30(){
   }catch(e){vHp30.textContent="-"}
 }
 function loadImgs(){kiruna.src=bust("https://www2.irf.se/maggraphs/kiraver.png"); hobart.src=bust("https://www.sws.bom.gov.au/Images/Geophysical/Latest%20Conditions/Magnetograms/Hobart.gif"); tgo.src="https://flux.phys.uit.no/cgi-bin/mkstackplot.cgi?GifOnly&&comp=H&nor=&Sync=&t="+Date.now();}
-const map=L.map("map",{worldCopyJump:false,minZoom:1,maxZoom:4});
-requestAnimationFrame(()=>{map.invalidateSize(); map.fitWorld({padding:[0,0],maxZoom:2});});
-L.tileLayer("https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",{maxNativeZoom:8,maxZoom:6}).addTo(map);
+const map=L.map("map",{center:[20,0],zoom:2,worldCopyJump:false,minZoom:1,maxZoom:4,maxBounds:[[-85,-180],[85,180]],maxBoundsViscosity:1});
+function sizeMap(){map.invalidateSize();map.setView([20,0],2,{animate:false})}
+sizeMap(); requestAnimationFrame(sizeMap); setTimeout(sizeMap,250);
+L.tileLayer("https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",{maxNativeZoom:8,maxZoom:4,noWrap:true}).addTo(map);
 L.circleMarker([cfg.lat,cfg.lon],{radius:7,color:"#fb923c",fillColor:"#fb923c",fillOpacity:1}).addTo(map);
 let nightLayer=null,termLine=null,auroraLayer=null;
 function drawNight(){
   const d=new Date(),start=Date.UTC(d.getUTCFullYear(),0,1),day=(d-start)/864e5+1;
   const decl=-23.44*Math.cos((2*Math.PI/365)*(day+10));
   const min=d.getUTCHours()*60+d.getUTCMinutes(),lngSun=180-min/4,rad=Math.PI/180,line=[];
-  for(let lng=-180;lng<=180;lng+=2){let lat=0,t=Math.tan(decl*rad);if(Math.abs(t)>1e-6)lat=Math.atan(-Math.cos((lng-lngSun)*rad)/t)/rad;line.push([Math.max(-89.9,Math.min(89.9,lat)),lng])}
-  const night=decl>=0?line.concat([[-90,180],[-90,-180]]):line.concat([[90,180],[90,-180]]);
+  for(let lng=-180;lng<=180;lng+=2){let lat=0,t=Math.tan(decl*rad);if(Math.abs(t)>1e-6)lat=Math.atan(-Math.cos((lng-lngSun)*rad)/t)/rad;line.push([Math.max(-85,Math.min(85,lat)),lng])}
+  const night=decl>=0?line.concat([[-85,180],[-85,-180]]):line.concat([[85,180],[85,-180]]);
   if(nightLayer)map.removeLayer(nightLayer);if(termLine)map.removeLayer(termLine);
-  nightLayer=L.polygon(night,{stroke:false,fillColor:"#02040a",fillOpacity:.55,interactive:false}).addTo(map);
+  nightLayer=L.polygon(night,{stroke:false,fillColor:"#02040a",fillOpacity:.45,interactive:false}).addTo(map);
   termLine=L.polyline(line,{color:"#e5e7eb",weight:2,interactive:false}).addTo(map);
 }
 async function loadAurora(){
@@ -142,7 +143,7 @@ async function loadAurora(){
     const coords=o.coordinates||o; if(auroraLayer)map.removeLayer(auroraLayer); auroraLayer=L.layerGroup();
     let best=0,bestD=1e9;
     for(const p of coords){if(!p||p.length<3)continue;const lon=p[0]>180?p[0]-360:p[0]; if(p[2]>=8) L.circleMarker([p[1],lon],{radius:4,stroke:false,fillColor:"#22c55e",fillOpacity:.22,interactive:false}).addTo(auroraLayer); const a=p[1]-cfg.lat,b=lon-cfg.lon,d=a*a+b*b; if(d<bestD){bestD=d;best=p[2]}}
-    auroraLayer.addTo(map); vAurora.textContent=Math.round(best)+"%"; mapStatus.textContent="2:1 Earth box + night terminator";
+    auroraLayer.addTo(map); vAurora.textContent=Math.round(best)+"%"; mapStatus.textContent="whole Earth + night terminator";
   }catch(e){mapStatus.textContent="aurora overlay unavailable"}
 }
 const ENLIL_DIR="https://services.swpc.noaa.gov/images/animations/enlil/";
