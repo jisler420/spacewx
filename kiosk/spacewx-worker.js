@@ -87,14 +87,22 @@ async function loop() {
 
 onmessage = function (e) {
   if (e.data && e.data.type === "poll") loop();
+  if (e.data && e.data.type === "config") arm(e.data.pollSec);
 };
 
-loop();
-function msToNextSlot() {
-  const n = Date.now();
-  return 30000 - (n % 30000);
+let pollMs = 30000;
+let waitTimer = null;
+let beatTimer = null;
+function arm(sec) {
+  const n = [30, 60, 120, 300].indexOf(Number(sec)) >= 0 ? Number(sec) : 30;
+  pollMs = n * 1000;
+  if (waitTimer) clearTimeout(waitTimer);
+  if (beatTimer) clearInterval(beatTimer);
+  waitTimer = setTimeout(function () {
+    loop();
+    beatTimer = setInterval(loop, pollMs);
+  }, pollMs - (Date.now() % pollMs));
 }
-setTimeout(function () {
-  loop();
-  setInterval(loop, 30000);
-}, msToNextSlot());
+
+loop();
+arm(30);
