@@ -28,7 +28,7 @@ td.kp-g{color:#86efac}td.kp-4{background:#3b2a10;color:#fde68a}td.kp-5{backgroun
 td.kp-pred{opacity:.8}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
 .swcard{grid-column:1/-1}
-#swPlot{width:100%;height:680px;display:block;border-radius:8px;background:#0b1220}
+#swPlot{width:100%;height:520px;display:block;border-radius:8px;background:#0b1220}
 @media(max-width:980px){.cols{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
 .card h2{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
@@ -157,12 +157,12 @@ function samp(arr,n){if(!arr||!arr.length)return [];if(arr.length<=n)return arr;
 function drawSw(){
   const el=document.getElementById("swPlot"); if(!el)return;
   const now=Date.now(),t0=now-36*3600000,t1=now+3600000;
-  const box=el.parentElement,cssW=Math.max(640,box.clientWidth||960),cssH=680,dpr=Math.min(2,window.devicePixelRatio||1);
+  const box=el.parentElement,cssW=Math.max(640,box.clientWidth||960),cssH=520,dpr=Math.min(2,window.devicePixelRatio||1);
   el.width=Math.round(cssW*dpr);el.height=Math.round(cssH*dpr);el.style.width=cssW+"px";el.style.height=cssH+"px";
   const ctx=el.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle="#0b1220";ctx.fillRect(0,0,cssW,cssH);
   const L=70,R=16,pw=cssW-L-R,span=t1-t0,xAt=t=>L+((t-t0)/span)*pw;
-  const panels=[{title:"IMF nT",log:0,ymin:-20,ymax:20,h:200},{title:"Speed km/s",log:0,ymin:200,ymax:900,h:130},{title:"Hp30",log:0,ymin:0,ymax:9,h:110},{title:"AE / mag X",log:0,ymin:-1000,ymax:1000,h:150}];
+  const panels=[{title:"IMF nT",log:0,ymin:-20,ymax:20,h:200},{title:"Speed km/s",log:0,ymin:200,ymax:900,h:130},{title:"Hp30",log:0,ymin:0,ymax:9,h:110}];
   let yCursor=8;
   function yAt(y0,ph,ymin,ymax,log,v){if(log){const a=Math.log10(Math.max(ymin,v)),b=Math.log10(ymin),c=Math.log10(ymax)-b;return y0+ph-((a-b)/c)*ph}return y0+ph-((v-ymin)/(ymax-ymin))*ph}
   function frame(p){
@@ -181,7 +181,6 @@ function drawSw(){
   const p2=panels[2],y2=frame(p2);
   const barW=Math.max(2,(30*60*1000)/span*pw-1);
   (hapiPack.hp||[]).forEach(function(r){if(!isFinite(r.Hp30))return;const x=xAt(r.t),y=yAt(y2,p2.h,p2.ymin,p2.ymax,0,r.Hp30);ctx.fillStyle=r.Hp30>=5?"#FFF033":r.Hp30>=4?"#FFBB44":"#88CC66";ctx.fillRect(x,y,barW,y2+p2.h-y)});
-  frame(panels[3]);
   ctx.fillStyle="#8b97b3";ctx.font="9px sans-serif";ctx.textAlign="center";
   const startH=new Date(t0);startH.setUTCMinutes(0,0,0);
   for(let t=startH.getTime();t<=t1;t+=3600000){const dt=new Date(t);ctx.fillText(dt.getUTCHours()===0?dt.toISOString().slice(5,10):String(dt.getUTCHours()).padStart(2,"0"),xAt(t),cssH-6)}
@@ -194,9 +193,9 @@ async function loadWindImf(){
   const [xray,prot,mag,plasma,enlil,kp,hp,kpf,dst]=await Promise.all([
     hapi("xray_flux_rt","xray_flux_long,xray_flux_short",start,stop),
     hapi("proton_flux_500_rt","proton_flux_10MeV,proton_flux_50MeV,proton_flux_100MeV,proton_flux_500MeV",start,stop),
-    hapi("solar_wind_mag_rt","bt,by_gsm,bz_gsm",start,stop),
-    hapi("solar_wind_plasma_rt","speed,density,temperature",start,stop),
-    hapi("solar_wind_plasma_enlil_metoffice","speed,density,bt",start,stop),
+    hapi("solar_wind_mag_rt","bt,bx_gsm,by_gsm,bz_gsm",start,stop),
+    hapi("solar_wind_plasma_rt","density,speed,temperature",start,stop),
+    hapi("solar_wind_plasma_enlil_metoffice","density,speed,bt",start,stop),
     hapi("kp_index","Kp",start,stop),
     hapi("hp30_index","Hp30",start,stop),
     hapi("kp_index_noaa_geomag_forecast","kp_index",start,stop),
