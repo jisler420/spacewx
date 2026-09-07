@@ -143,7 +143,7 @@ function gFromKp(k){if(!isFinite(k)||k<5)return "G0";if(k<6)return "G1";if(k<7)r
 function kpGCell(k){
   if(!isFinite(k)) return "—";
   const g=gFromKp(k);
-  return "<span class=\"kp\">"+k.toFixed(1)+"</span><span class=\"g "+g.toLowerCase()+"\">"+g+"</span>";
+  return "<span class=\"kp\">"+k.toFixed(1)+"</span>"+(k>=5?"<span class=\"g "+g.toLowerCase()+"\">"+g+"</span>":"");
 }
 function renderKpForecast(kf){
   if(!Array.isArray(kf)||!kpForecast)return;
