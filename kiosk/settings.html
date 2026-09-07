@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SpaceWx Settings</title>
+<style>html,body{margin:0;background:#07090f;color:#e8eefc;font:16px/1.4 Segoe UI,system-ui,sans-serif}main{max-width:520px;margin:40px auto;padding:16px}label{display:block;margin:12px 0 4px;color:#8b97b8}input{width:100%;padding:10px;border-radius:8px;border:1px solid #2a3558;background:#101526;color:#e8eefc}button,a{display:inline-block;margin:16px 8px 0 0;padding:10px 14px;border-radius:8px;border:0;background:#5eead4;color:#07090f;text-decoration:none}a{background:#1a2140;color:#e8eefc}.muted{color:#8b97b8;font-size:13px}</style>
+</head>
+<body><main>
+<h1>Settings</h1>
+<p class="muted">US 5-digit ZIP only. Blank uses Grand Forks 58201. Change anytime.</p>
+<label>ZIP code</label>
+<input id="zip" maxlength="5" inputmode="numeric" placeholder="58201">
+<div id="msg" class="muted"></div>
+<button id="save">Save</button>
+<a href="index.html">Back to live</a>
+</main>
+<script>
+const DEFAULT={zip:"58201",lat:47.901,lon:-97.0446,place:"Grand Forks, ND",tz:"America/Chicago"};
+function load(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem("spacewx-cfg")||"{}"))}catch(e){return Object.assign({},DEFAULT)}}
+zip.value=load().zip||"58201";
+save.onclick=async()=>{
+ let z=(zip.value||"").replace(/\D/g,"").slice(0,5)||"58201";
+ if(!/^\d{5}$/.test(z)){msg.textContent="Need a 5-digit US ZIP.";return;}
+ msg.textContent="Looking up "+z+"…";
+ try{const r=await fetch("https://api.zippopotam.us/us/"+z);if(!r.ok)throw new Error("unknown ZIP");const j=await r.json();const p=j.places[0];
+ const cfg={zip:z,lat:+p.latitude,lon:+p.longitude,place:p["place name"]+", "+p["state abbreviation"],tz:"America/Chicago"};
+ localStorage.setItem("spacewx-cfg",JSON.stringify(cfg));msg.textContent="Saved "+cfg.place;}catch(e){msg.textContent="ZIP lookup failed: "+e}
+};
+</script></body></html>
