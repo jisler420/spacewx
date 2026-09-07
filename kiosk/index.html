@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpaceWx</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
 :root{--bg:#070b12;--card:#121826;--line:#2a3650;--text:#eef3ff;--muted:#8b97b3;--acc:#5eead4;--ok:#34d399;--bad:#f87171;--rail:#0b1220}
 *{box-sizing:border-box}
@@ -75,7 +75,7 @@ th:first-child,td:first-child{text-align:left}
     <div class="card"><h2>IMF Bz nT</h2><canvas class="chart" id="bzPlot"></canvas><div class="muted">South favors aurora</div></div>
     <div class="card"><h2>GOES Hp nT</h2><canvas class="chart" id="goesPlot"></canvas><div class="muted" id="goesStatus">Last 2.5 hours</div></div>
     <div class="card"><h2>Dst nT</h2><canvas class="chart" id="dstCanvas"></canvas><div class="muted">Last 2.5 hours</div></div>
-    <div class="card"><h2>Hp30</h2><canvas class="chart" id="hp30Plot"></canvas><div class="muted">GFZ nowcast file</div></div>
+    <div class="card"><h2>Hp30</h2><canvas class="chart" id="hp30Plot"></canvas><div class="muted">GFZ nowcast</div></div>
     <div class="card"><h2>Kiruna IRF</h2><img id="kiruna" alt="Kiruna"></div>
     <div class="card"><h2>TGO Europe H</h2><img id="tgo" alt="TGO" referrerpolicy="no-referrer"></div>
     <div class="card"><h2>Hobart BOM</h2><img id="hobart" alt="Hobart"></div>
@@ -89,7 +89,7 @@ th:first-child,td:first-child{text-align:left}
   <div class="card"><h2>Feeds</h2><div id="feedStatus" class="muted">checking</div><div class="muted" id="imfStatus"></div></div>
 </aside>
 </div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 const DEFAULT={zip:"58201",lat:47.901,lon:-97.0446,place:"Grand Forks, ND",tz:"America/Chicago"};
 const HOURS=2.5;
@@ -113,19 +113,19 @@ function chart(canvas,series,unit){
   if(!canvas)return;
   const w=canvas.width=Math.max(480,Math.floor(canvas.clientWidth*2)||480);
   const h=canvas.height=420,ctx=canvas.getContext("2d");
-  const L=54,R=12,T=12,B=28,pw=w-L-R,ph=h-T-B;
+  const left=54,R=12,T=12,B=28,pw=w-left-R,ph=h-T-B;
   ctx.fillStyle="#0a0e18";ctx.fillRect(0,0,w,h);
   const all=[];series.forEach(s=>s.y.forEach(v=>{if(isFinite(v))all.push(v)}));
-  if(!all.length){ctx.fillStyle="#8b97b3";ctx.fillText("no data",L,h/2);return}
+  if(!all.length){ctx.fillStyle="#8b97b3";ctx.fillText("no data",left,h/2);return}
   let ymin=Math.min(...all),ymax=Math.max(...all);if(ymin===ymax){ymin-=1;ymax+=1}
   const pad=(ymax-ymin)*0.12;ymin-=pad;ymax+=pad;
   const yAt=v=>T+ph-(v-ymin)/(ymax-ymin)*ph;
   ctx.strokeStyle="#243044";ctx.fillStyle="#8b97b3";ctx.font="14px sans-serif";ctx.textAlign="right";
-  for(let i=0;i<=4;i++){const v=ymin+(ymax-ymin)*i/4,y=yAt(v);ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(w-R,y);ctx.stroke();ctx.fillText(v.toFixed(Math.abs(ymax-ymin)<10?1:0),L-6,y+4)}
+  for(let i=0;i<=4;i++){const v=ymin+(ymax-ymin)*i/4,y=yAt(v);ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(w-R,y);ctx.stroke();ctx.fillText(v.toFixed(Math.abs(ymax-ymin)<10?1:0),left-6,y+4)}
   ctx.save();ctx.translate(14,T+ph/2);ctx.rotate(-Math.PI/2);ctx.textAlign="center";ctx.fillText(unit||"nT",0,0);ctx.restore();
-  ctx.textAlign="left";ctx.fillText("-2.5h",L,h-8);ctx.textAlign="right";ctx.fillText("now",w-R,h-8);
-  if(ymin<0&&ymax>0){ctx.strokeStyle="#445067";ctx.beginPath();ctx.moveTo(L,yAt(0));ctx.lineTo(w-R,yAt(0));ctx.stroke()}
-  series.forEach(s=>{ctx.strokeStyle=s.color;ctx.lineWidth=2;ctx.beginPath();s.y.forEach((v,i)=>{if(!isFinite(v))return;const x=L+i/Math.max(1,s.y.length-1)*pw,y=yAt(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()});
+  ctx.textAlign="left";ctx.fillText("-2.5h",left,h-8);ctx.textAlign="right";ctx.fillText("now",w-R,h-8);
+  if(ymin<0&&ymax>0){ctx.strokeStyle="#445067";ctx.beginPath();ctx.moveTo(left,yAt(0));ctx.lineTo(w-R,yAt(0));ctx.stroke()}
+  series.forEach(s=>{ctx.strokeStyle=s.color;ctx.lineWidth=2;ctx.beginPath();s.y.forEach((v,i)=>{if(!isFinite(v))return;const x=left+i/Math.max(1,s.y.length-1)*pw,y=yAt(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()});
 }
 function drawWindImf(){
   const w=cache.wind,m=cache.mag;
@@ -197,7 +197,7 @@ async function loadGoes(){
   drawGoes();
 }
 async function loadHp30(){
-  const txt=await settled("https://kp.gfz.de/fileadmin/files_for_gfz_cms/Hp30_ap30_nowcast.txt");
+  const txt=await settled("./hp30.txt")||await settled("https://kp.gfz.de/fileadmin/files_for_gfz_cms/Hp30_ap30_nowcast.txt");
   if(!txt){vHp30.textContent="-";return}
   const rows=[];
   String(txt).split(/\n/).forEach(line=>{
@@ -214,14 +214,18 @@ function loadImgs(){
   kiruna.src=bust("https://www2.irf.se/maggraphs/kiraver.png");
   hobart.src=bust("https://www.sws.bom.gov.au/Images/Geophysical/Latest%20Conditions/Magnetograms/Hobart.gif");
   tgo.src="https://flux.phys.uit.no/cgi-bin/mkstackplot.cgi?GifOnly&&comp=H&nor=&Sync=&t="+Date.now();
+  [kiruna,hobart,tgo].forEach(img=>{img.onerror=()=>{img.style.display="none";};});
 }
-const map=L.map("map",{center:[20,0],zoom:2,minZoom:2,maxZoom:2,zoomControl:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,touchZoom:false,keyboard:false,dragging:false,worldCopyJump:false,maxBounds:[[-85,-180],[85,180]],maxBoundsViscosity:1});
-function sizeMap(){map.invalidateSize();map.setView([20,0],2,{animate:false})}
+let map=null,drawNight=()=>{},loadAurora=async()=>{};
+function sizeMap(){if(map){map.invalidateSize();map.setView([20,0],2,{animate:false})}}
+try{
+if(!window.L) throw new Error("no leaflet");
+map=L.map("map",{center:[20,0],zoom:2,minZoom:2,maxZoom:2,zoomControl:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,touchZoom:false,keyboard:false,dragging:false,worldCopyJump:false,maxBounds:[[-85,-180],[85,180]],maxBoundsViscosity:1});
 sizeMap();requestAnimationFrame(sizeMap);setTimeout(sizeMap,250);
 L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",{maxZoom:2,noWrap:true}).addTo(map);
 L.circleMarker([cfg.lat,cfg.lon],{radius:7,color:"#fb923c",fillColor:"#fb923c",fillOpacity:1}).addTo(map);
 let nightLayer=null,termLine=null,auroraLayer=null;
-function drawNight(){
+drawNight=function(){
   const d=new Date(),start=Date.UTC(d.getUTCFullYear(),0,1),day=(d-start)/864e5+1;
   const decl=-23.44*Math.cos((2*Math.PI/365)*(day+10));
   const min=d.getUTCHours()*60+d.getUTCMinutes(),lngSun=180-min/4,rad=Math.PI/180,line=[];
@@ -230,8 +234,8 @@ function drawNight(){
   if(nightLayer)map.removeLayer(nightLayer);if(termLine)map.removeLayer(termLine);
   nightLayer=L.polygon(night,{stroke:false,fillColor:"#000",fillOpacity:.35,interactive:false}).addTo(map);
   termLine=L.polyline(line,{color:"#cbd5e1",weight:1.5,interactive:false}).addTo(map);
-}
-async function loadAurora(){
+};
+loadAurora=async function(){
   const o=await settled("https://services.swpc.noaa.gov/json/ovation_aurora_latest.json");
   if(!o){mapStatus.textContent="aurora overlay unavailable";return}
   const coords=o.coordinates||o;
@@ -256,7 +260,8 @@ async function loadAurora(){
   auroraLayer.addTo(map);
   vAurora.textContent=Math.round(best)+"%";
   mapStatus.textContent="whole Earth + night terminator";
-}
+};
+}catch(err){if(mapStatus)mapStatus.textContent="map unavailable"}
 const ENLIL_DIR="https://services.swpc.noaa.gov/images/animations/enlil/";
 let frames=[],fi=0,timer=null;
 function show(n){if(!frames.length)return;fi=(n+frames.length)%frames.length;enlil.src=frames[fi];enlilScrub.value=fi;enlilStamp.textContent=(fi+1)+"/"+frames.length}
