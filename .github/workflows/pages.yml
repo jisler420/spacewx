@@ -21,7 +21,7 @@ jobs:
       - name: Stage kiosk as site root
         run: |
           mkdir -p _site
-          cp kiosk/index.html _site/index.html || echo '<!doctype html><p>Add kiosk/index.html</p>' > _site/index.html
+          cp kiosk/*.html _site/
           cp FEEDS.md README.md LICENSE _site/ || true
       - uses: actions/upload-pages-artifact@v3
         with:
