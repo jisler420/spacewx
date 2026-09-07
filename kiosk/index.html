@@ -91,7 +91,7 @@ th:first-child,td:first-child{text-align:left}
 </main>
 </div>
 <script>
-const DEFAULT={zip:"",lat:30.02449,lon:-97.9072,place:"30.02449, -97.90720",tz:"America/Chicago"};
+const DEFAULT={zip:"",lat:30.02449,lon:-97.9072,place:"30.02449, -97.90720",tz:"America/Chicago",pollSec:30};
 const HOURS=2.5;
 function loadCfg(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem("spacewx-cfg")||"{}"))}catch(e){return Object.assign({},DEFAULT)}}
 const cfg=loadCfg();
@@ -364,7 +364,8 @@ let wxWorker=null;
 try{
   wxWorker=new Worker("spacewx-worker.js");
   wxWorker.onmessage=function(e){if(e.data&&e.data.type==="update")applyWorkerData(e.data.data)};
-  wxWorker.onerror=function(){if(!wxWorker._fallback){wxWorker._fallback=1;refreshKpis();setInterval(refreshKpis,60000)}};
+  wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||30});
+  wxWorker.onerror=function(){if(!wxWorker._fallback){wxWorker._fallback=1;refreshKpis();scheduleOnMinute(refreshKpis)}};
 }catch(e){
   loadWx();loadWindImf();loadHp30();loadAurora();
   setInterval(refreshKpis,60000);
@@ -375,8 +376,10 @@ function refreshKpis(){
 }
 setInterval(tick,1000);
 function scheduleOnMinute(fn){
-  const wait=30000-(Date.now()%30000);
-  setTimeout(function(){fn();setInterval(fn,30000)},wait);
+  const sec=[30,60,120,300].indexOf(+cfg.pollSec)>=0?+cfg.pollSec:30;
+  const ms=sec*1000;
+  const wait=ms-(Date.now()%ms);
+  setTimeout(function(){fn();setInterval(fn,ms)},wait);
 }
 scheduleOnMinute(function(){refreshKpis();drawEarth()});
 setInterval(loadImgs,360000);
