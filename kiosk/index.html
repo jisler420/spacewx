@@ -139,11 +139,18 @@ function auroraLevel(kind,n){
   return 0;
 }
 function tone(el,kind,n){if(!el)return;el.className="tone"+auroraLevel(kind,n)}
-function gFromKp(k){if(!isFinite(k)||k<5)return "G0";if(k<6)return "G1";if(k<7)return "G2";if(k<8)return "G3";if(k<9)return "G4";return "G5"}
+function gFromKp(k){
+  if(!isFinite(k)||k<4.67)return "G0";
+  if(k<5.67)return "G1";
+  if(k<6.67)return "G2";
+  if(k<7.67)return "G3";
+  if(k<8.67)return "G4";
+  return "G5";
+}
 function kpGCell(k){
   if(!isFinite(k)) return "—";
   const g=gFromKp(k);
-  return "<span class=\"kp\">"+k.toFixed(1)+"</span>"+(k>=5?"<span class=\"g "+g.toLowerCase()+"\">"+g+"</span>":"");
+  return "<span class=\"kp\">"+k.toFixed(1)+"</span>"+(g!=="G0"?"<span class=\"g "+g.toLowerCase()+"\">"+g+"</span>":"");
 }
 function renderKpForecast(kf){
   if(!Array.isArray(kf)||!kpForecast)return;
