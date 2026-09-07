@@ -9,24 +9,26 @@
 :root{--bg:#0b0f16;--card:#141a26;--line:#2a3448;--text:#eef3ff;--muted:#8b97b3;--bad:#f87171;--ok:#34d399}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Segoe UI,system-ui,sans-serif}
 a{color:#7dd3fc;text-decoration:none}
-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 16px;background:#0e1420;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:500}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:#0e1420;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:500}
 .brand{font-weight:700;letter-spacing:.04em}
 nav a{margin-left:12px;padding:4px 10px;border:1px solid var(--line);border-radius:6px}
-.wrap{max-width:1400px;margin:0 auto;padding:12px 16px 32px}
+.wrap{max-width:1400px;margin:0 auto;padding:12px 16px 40px}
 .kpis{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:12px}
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(4,1fr)}}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
-.kpi b{display:block;font-size:26px;font-weight:700}
+.kpi b{display:block;font-size:24px;font-weight:700}
 .kpi span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
 #map{height:420px;border-radius:8px;border:1px solid var(--line);background:#071018}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-@media(max-width:900px){.row{grid-template-columns:1fr}}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:900px){.row,.row3{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px}
 .card h2{margin:0 0 8px;font-size:14px;color:var(--muted);font-weight:600}
-#tgo{width:100%;background:#fff;border-radius:4px;display:block}
-canvas.na{width:100%;height:280px;display:block;background:#0a0e18}
+.card img{width:100%;display:block;border-radius:4px;background:#000}
+#tgo{background:#fff}
+canvas.na{width:100%;height:260px;display:block;background:#0a0e18}
 .down{color:var(--bad)}.ok{color:var(--ok)}.muted{color:var(--muted);font-size:12px}
-#enlil{width:100%;border-radius:4px;display:block;background:#000}
+#kpForecast{white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace;font-size:13px}
 </style></head>
 <body>
 <header>
@@ -41,21 +43,42 @@ canvas.na{width:100%;height:280px;display:block;background:#0a0e18}
     <div class="kpi"><span>Kp</span><b id="vKp">—</b></div>
     <div class="kpi"><span>R / S / G</span><b id="vRsg">—</b></div>
     <div class="kpi"><span>Bz</span><b id="vBz">—</b></div>
+    <div class="kpi"><span>Bt</span><b id="vBt">—</b></div>
     <div class="kpi"><span>Dst</span><b id="vDst">—</b></div>
     <div class="kpi"><span>SFI</span><b id="vSfi">—</b></div>
     <div class="kpi"><span>Wind</span><b id="vWind">—</b></div>
     <div class="kpi"><span>X-ray</span><b id="vXray">—</b></div>
-    <div class="kpi"><span>Hemi GW</span><b id="vHemi">—</b></div>
   </div>
   <div id="map"></div>
   <div class="muted" id="mapStatus" style="margin:6px 0 0">map</div>
+
+  <div class="row">
+    <div class="card"><h2>Solar wind · SWPC 24h</h2><img id="sw24" alt="SWPC solar wind 24 hour"><div class="muted">NOAA SWPC ACE MAG + SWEPAM</div></div>
+    <div class="card"><h2>Geospace geomagnetic activity · 1 day</h2><img id="geo1" alt="Geospace 1 day"><div class="muted">NOAA SWPC geospace model</div></div>
+  </div>
+  <div class="row">
+    <div class="card"><h2>Geospace North America</h2><img id="geoNA" alt="Geospace North America"><div class="muted">SWPC geospace animation latest</div></div>
+    <div class="card"><h2>Geospace 3 hour</h2><img id="geo3h" alt="Geospace 3 hour"><div class="muted">SWPC geospace model</div></div>
+  </div>
+
   <div class="row">
     <div class="card"><h2>Europe magnetometers · TGO H</h2><img id="tgo" alt="TGO H stackplot" referrerpolicy="no-referrer"><div class="muted" id="tgoStatus">TGO</div></div>
     <div class="card"><h2>North America magnetometers · USGS X</h2><canvas class="na" id="naPlot"></canvas><div class="muted" id="naStatus">USGS</div></div>
   </div>
+
   <div class="row">
-    <div class="card"><h2>Kp forecast</h2><div id="kpForecast">—</div><div class="muted" id="feedStatus">feeds</div><div class="muted" id="homeAurora">aurora —</div></div>
-    <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="WSA-Enlil"><div class="muted">NOAA SWPC model image</div></div>
+    <div class="card"><h2>Aurora oval north</h2><img id="ovalN" alt="OVATION north"></div>
+    <div class="card"><h2>Aurora oval south</h2><img id="ovalS" alt="OVATION south"></div>
+  </div>
+
+  <div class="row">
+    <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="WSA-Enlil"><div class="muted">NOAA SWPC</div></div>
+    <div class="card"><h2>Hp30 forecast · GFZ Enlil</h2><img id="hpo" alt="GFZ Hpo Enlil forecast"><div class="muted">GFZ Potsdam Hpo / Enlil</div></div>
+  </div>
+
+  <div class="row">
+    <div class="card"><h2>Kp forecast</h2><div id="kpForecast">—</div><div class="muted" id="feedStatus">feeds</div><div class="muted" id="homeAurora">aurora —</div><div class="muted" id="vHemi">hemi —</div></div>
+    <div class="card"><h2>Sources</h2><div class="muted">Layout modeled on SWPC solar wind, SWPC geospace plots, SpaceWeatherLive, and GFZ Hpo. Data from NOAA / USGS / TGO / GFZ — not scraped from SpaceWeatherLive.</div></div>
   </div>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -72,8 +95,17 @@ const FEEDS={
   xray:["https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json","https://services.swpc.noaa.gov/json/goes/secondary/xrays-6-hour.json"],
   hemi:["https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt"]
 };
+const IMAGES={
+  sw24:"https://services.swpc.noaa.gov/images/ace-mag-swepam-24-hour.gif",
+  geo1:"https://services.swpc.noaa.gov/images/geospace/geospace_1_day.png",
+  geo3h:"https://services.swpc.noaa.gov/images/geospace/geospace_3_hour.png",
+  geoNA:"https://services.swpc.noaa.gov/images/animations/geospace/north_america/latest.png",
+  ovalN:"https://services.swpc.noaa.gov/images/animations/ovation/north/latest.jpg",
+  ovalS:"https://services.swpc.noaa.gov/images/animations/ovation/south/latest.jpg",
+  enlil:"https://services.swpc.noaa.gov/images/animations/enlil/latest.jpg",
+  hpo:"https://isdc-data.gfz.de/geomagnetism/HpoForecast/v0102/output/Hpo/png/hpo_forecast_enlil.png"
+};
 const TGO="https://flux.phys.uit.no/cgi-bin/mkstackplot.cgi?GifOnly&&comp=H&nor=&Sync=";
-const ENLIL="https://services.swpc.noaa.gov/images/animations/enlil/latest.jpg";
 const NA=["BRW","CMO","BOU","FRD"];
 const DEFAULT={zip:"58201",lat:47.901,lon:-97.0446,place:"Grand Forks, ND",tz:"America/Chicago"};
 function loadCfg(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem("spacewx-cfg")||"{}"));}catch(e){return Object.assign({},DEFAULT)}}
@@ -81,7 +113,8 @@ let cfg=loadCfg();
 async function grab(u){const r=await fetch(u,{cache:"no-store"});if(!r.ok)throw new Error(r.status);const t=r.headers.get("content-type")||"";if(t.includes("json")||u.endsWith(".json"))return r.json();return r.text()}
 async function first(list){let err;for(const u of list){try{return{data:await grab(u),src:u.split("/").pop()}}catch(e){err=e}}throw err||new Error("down")}
 const last=a=>Array.isArray(a)?a[a.length-1]:a;
-function xrayClass(f){f=Number(f);if(!isFinite(f))return "—";if(f>=1e-3)return "X"+(f/1e-3).toFixed(1);if(f>=1e-4)return "M"+(f/1e-4).toFixed(1);if(f>=1e-5)return "C"+(f/1e-5).toFixed(1);if(f>=1e-6)return "B"+(f/1e-6).toFixed(1);return "A"+(f/1e-7).toFixed(1)}
+function xrayClass(f){f=Number(f);if(!isFinite(f))return "—";if(f>=1e-4)return "X"+(f/1e-4).toFixed(1);if(f>=1e-5)return "M"+(f/1e-5).toFixed(1);if(f>=1e-6)return "C"+(f/1e-6).toFixed(1);if(f>=1e-7)return "B"+(f/1e-7).toFixed(1);return "A"+(f/1e-8).toFixed(1)}
+function xrayRow(arr){if(!Array.isArray(arr))return arr;for(let i=arr.length-1;i>=0;i--){if(String(arr[i].energy||"").includes("0.1-0.8"))return arr[i]}return last(arr)}
 const map=L.map("map",{worldCopyJump:true}).setView([cfg.lat,cfg.lon],3);
 L.tileLayer("https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",{maxNativeZoom:8,maxZoom:6,attribution:"NASA GIBS"}).addTo(map);
 let pin=L.circleMarker([cfg.lat,cfg.lon],{radius:7,color:"#fb923c",fillColor:"#fb923c",fillOpacity:1}).addTo(map);
@@ -112,29 +145,36 @@ async function refreshWx(){
     const kp=await first(FEEDS.kp),dst=await first(FEEDS.dst),sfi=await first(FEEDS.sfi),mag=await first(FEEDS.mag),wind=await first(FEEDS.wind),sc=await first(FEEDS.scales);
     const k=Number((last(kp.data)||{}).Kp);
     const d=Number((last(dst.data)||{}).dst);
-    const bz=Number((last(mag.data)||mag.data).bz_gsm);
+    const m=last(mag.data)||mag.data||{};
+    const bz=Number(m.bz_gsm), bt=Number(m.bt);
     const w=Number((last(wind.data)||wind.data).proton_speed);
     const flux=Number((sfi.data.flux!=null?sfi.data.flux:last(sfi.data)&&last(sfi.data).flux));
     const n=sc.data["0"]||{};
     vKp.textContent=isFinite(k)?k.toFixed(1):"—";
     vRsg.textContent=`R${n.R&&n.R.Scale||"—"} S${n.S&&n.S.Scale||"—"} G${n.G&&n.G.Scale||"—"}`;
     vBz.textContent=isFinite(bz)?bz.toFixed(1):"—";
+    vBt.textContent=isFinite(bt)?bt.toFixed(1):"—";
     vDst.textContent=isFinite(d)?Math.round(d):"—";
     vSfi.textContent=isFinite(flux)?Math.round(flux):"—";
     vWind.textContent=isFinite(w)?Math.round(w)+" km/s":"—";
-    feedStatus.textContent="live"; feedStatus.className="muted ok";
+    feedStatus.textContent="live NOAA"; feedStatus.className="muted ok";
   }catch(e){feedStatus.textContent="DOWN "+e; feedStatus.className="muted down"}
-  try{const xr=await first(FEEDS.xray);const row=last(xr.data);vXray.textContent=xrayClass(row&&row.flux)}catch(e){vXray.textContent="DOWN";vXray.className="down"}
-  try{const h=await first(FEEDS.hemi);const lines=String(h.data).trim().split(/\n/).filter(l=>l&&!l.startsWith("#"));const parts=lines.pop().trim().split(/\s+/);vHemi.textContent=parts.length>=2?parts[parts.length-2]+" / "+parts[parts.length-1]:"—"}catch(e){vHemi.textContent="DOWN"}
+  try{const xr=await first(FEEDS.xray);const row=xrayRow(xr.data);vXray.className="";vXray.textContent=xrayClass(row&&row.flux)}catch(e){vXray.textContent="DOWN";vXray.className="down"}
+  try{const h=await first(FEEDS.hemi);const lines=String(h.data).trim().split(/\n/).filter(l=>l&&!l.startsWith("#"));const parts=lines.pop().trim().split(/\s+/);vHemi.textContent=parts.length>=2?"hemi GW "+parts[parts.length-2]+" / "+parts[parts.length-1]:"hemi —"}catch(e){vHemi.textContent="hemi DOWN"}
   try{const kf=await first(FEEDS.kpf);const rows=Array.isArray(kf.data)?kf.data.filter(r=>r.observed!=="observed").slice(0,8):[];kpForecast.textContent=rows.map(r=>`${String(r.time_tag||"").slice(5,16)}  Kp ${r.kp??r.Kp??""}`).join("\n")||"n/a"}catch(e){kpForecast.textContent="forecast DOWN"}
 }
 async function loadAurora(){try{const o=await first(FEEDS.aurora);const coords=o.data.coordinates||o.data;let best=0;if(auroraLayer)map.removeLayer(auroraLayer);auroraLayer=L.layerGroup();
 for(const p of coords){if(!p||p[2]<8)continue;const lon=p[0]>180?p[0]-360:p[0];L.circleMarker([p[1],lon],{radius:4,stroke:false,fillColor:"#22c55e",fillOpacity:0.22,interactive:false}).addTo(auroraLayer);const a=p[1]-cfg.lat,b=lon-cfg.lon;if(a*a+b*b<16)best=Math.max(best,p[2])}
 auroraLayer.addTo(map);homeAurora.textContent="aurora near home "+best+"%";mapStatus.textContent="NASA GIBS + night terminator + OVATION"}catch(e){homeAurora.textContent="aurora DOWN";mapStatus.textContent="aurora DOWN"}}
-function loadTgo(){tgo.onload=()=>tgoStatus.textContent="TGO H · "+new Date().toISOString().slice(11,16)+"Z";tgo.onerror=()=>{tgoStatus.textContent="TGO DOWN";tgoStatus.className="muted down"};tgo.src=TGO+"&t="+Date.now()}
-function loadEnlil(){enlil.src=ENLIL+"?t="+Date.now()}
-async function loadNA(){const c=naPlot,w=c.width=c.clientWidth*2,h=c.height=c.clientHeight*2,ctx=c.getContext("2d");ctx.fillStyle="#0a0e18";ctx.fillRect(0,0,w,h);
-try{const colors=["#f87171","#60a5fa","#4ade80","#fbbf24"];let i=0;for(const id of NA){const j=await grab("https://geomag.usgs.gov/ws/data/?id="+id+"&format=json");const series=(j.values||[]).find(v=>v.id==="X"||v.id==="H")||j.values&&j.values[0];const vals=(series&&series.values||[]).filter(v=>typeof v==="number");if(vals.length<4)continue;const step=Math.max(1,Math.floor(vals.length/180));const sampled=vals.filter((_,n)=>n%step===0);const min=Math.min(...sampled),max=Math.max(...sampled),span=max-min||1;const y0=24+i*(h-30)/NA.length;ctx.strokeStyle=colors[i%4];ctx.lineWidth=2;ctx.beginPath();sampled.forEach((v,n)=>{const x=n/(sampled.length-1)*w,y=y0-((v-min)/span)*((h-40)/NA.length*0.7);n?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle="#8b97b8";ctx.font="20px sans-serif";ctx.fillText(id,8,y0);i++}naStatus.textContent="USGS X · "+NA.join(" ")}catch(e){naStatus.textContent="USGS DOWN";naStatus.className="muted down"}}
+function loadTgo(){tgo.onload=()=>{tgoStatus.className="muted";tgoStatus.textContent="TGO H · "+new Date().toISOString().slice(11,16)+"Z"};tgo.onerror=()=>{tgoStatus.textContent="TGO DOWN";tgoStatus.className="muted down"};tgo.src=TGO+"&t="+Date.now()}
+function bumpImages(){const t=Date.now();for(const [id,url] of Object.entries(IMAGES)){const el=document.getElementById(id);if(el)el.src=url+(url.includes("?")?"&":"?")+"t="+t}}
+async function loadNA(){
+  const c=naPlot,w=c.width=Math.max(400,c.clientWidth*2||800),h=c.height=Math.max(280,c.clientHeight*2||560),ctx=c.getContext("2d");
+  ctx.fillStyle="#0a0e18";ctx.fillRect(0,0,w,h);
+  try{const colors=["#f87171","#60a5fa","#4ade80","#fbbf24"];let i=0;
+    for(const id of NA){const j=await grab("https://geomag.usgs.gov/ws/data/?id="+id+"&format=json");const series=(j.values||[]).find(v=>v.id==="X"||v.id==="H")||j.values&&j.values[0];const vals=(series&&series.values||[]).filter(v=>typeof v==="number");if(vals.length<4)continue;const step=Math.max(1,Math.floor(vals.length/180));const sampled=vals.filter((_,n)=>n%step===0);const min=Math.min(...sampled),max=Math.max(...sampled),span=max-min||1;const y0=24+i*(h-30)/NA.length;ctx.strokeStyle=colors[i%4];ctx.lineWidth=2;ctx.beginPath();sampled.forEach((v,n)=>{const x=n/(sampled.length-1)*w,y=y0-((v-min)/span)*((h-40)/NA.length*0.7);n?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle="#8b97b8";ctx.font="20px sans-serif";ctx.fillText(id,8,y0);i++}
+    naStatus.className="muted";naStatus.textContent="USGS X · "+NA.join(" ")}catch(e){naStatus.textContent="USGS DOWN";naStatus.className="muted down"}
+}
 function tick(){
   const n=new Date();
   utc.textContent="UTC "+n.toISOString().slice(11,19);
@@ -144,6 +184,6 @@ function tick(){
   if(m!==lastNightMin){lastNightMin=m;drawNight();}
 }
 setTimeout(()=>map.invalidateSize(),200);
-tick();refreshWx();loadAurora();loadTgo();loadNA();loadEnlil();
-setInterval(tick,1000);setInterval(refreshWx,60000);setInterval(loadAurora,300000);setInterval(loadTgo,360000);setInterval(loadNA,360000);setInterval(loadEnlil,360000);
+tick();refreshWx();loadAurora();loadTgo();loadNA();bumpImages();
+setInterval(tick,1000);setInterval(refreshWx,60000);setInterval(loadAurora,300000);setInterval(loadTgo,360000);setInterval(loadNA,360000);setInterval(bumpImages,360000);
 </script></body></html>
