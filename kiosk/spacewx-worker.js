@@ -90,11 +90,11 @@ onmessage = function (e) {
 };
 
 loop();
-function msToNextMinute() {
+function msToNextSlot() {
   const n = Date.now();
-  return 60000 - (n % 60000);
+  return 30000 - (n % 30000);
 }
 setTimeout(function () {
   loop();
-  setInterval(loop, 60000);
-}, msToNextMinute());
+  setInterval(loop, 30000);
+}, msToNextSlot());
