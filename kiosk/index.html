@@ -6,35 +6,71 @@
 <title>SpaceWx</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-:root{--bg:#0b0f16;--card:#141a26;--line:#2a3448;--text:#eef3ff;--muted:#8b97b3;--bad:#f87171;--ok:#34d399}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Segoe UI,system-ui,sans-serif}
-a{color:#7dd3fc;text-decoration:none}
-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 16px;background:#0e1420;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:500;flex-wrap:wrap}
-.brand{font-weight:700;letter-spacing:.04em}
-nav a{margin-left:12px;padding:4px 10px;border:1px solid var(--line);border-radius:6px}
-.wrap{max-width:1400px;margin:0 auto;padding:12px 16px 40px}
-.kpis{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:12px}
+:root{
+  --bg:#070b12; --card:#121826; --card2:#182033; --line:#2a3650;
+  --text:#eef3ff; --muted:#8b97b3; --bad:#f87171; --ok:#34d399; --acc:#5eead4;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:
+  radial-gradient(1200px 500px at 10% -10%,#1a2744 0%,transparent 55%),
+  var(--bg);color:var(--text);font:15px/1.45 "Segoe UI",system-ui,sans-serif}
+a{color:var(--acc);text-decoration:none}
+a:hover{text-decoration:underline}
+header{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 18px;
+  padding:12px 20px;position:sticky;top:0;z-index:500;
+  background:rgba(8,12,20,.88);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.brand{font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:15px;color:var(--acc)}
+.meta{display:flex;flex-wrap:wrap;gap:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+nav a{
+  margin-left:8px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;
+  color:var(--text);background:#101827;
+}
+nav a:hover{border-color:var(--acc);text-decoration:none}
+.wrap{max-width:1440px;margin:0 auto;padding:16px 18px 48px}
+.kpis{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px;margin-bottom:14px}
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(4,1fr)}}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
-.kpi b{display:block;font-size:24px;font-weight:700}
-.kpi span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
-#map{height:420px;border-radius:8px;border:1px solid var(--line);background:#071018}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{
+  background:linear-gradient(180deg,var(--card2),var(--card));
+  border:1px solid var(--line);border-radius:12px;padding:10px 12px;
+  box-shadow:0 8px 20px rgba(0,0,0,.18);
+}
+.kpi b{display:block;font-size:26px;font-weight:750;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.kpi span{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+#map{
+  height:440px;border-radius:14px;border:1px solid var(--line);background:#071018;
+  overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,.28);
+}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
 @media(max-width:900px){.row{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:12px}
-.card h2{margin:0 0 8px;font-size:14px;color:var(--muted);font-weight:600}
-.card img.off{width:100%;display:block;border-radius:4px;background:#000}
-#tgo{width:100%;background:#fff;border-radius:4px;display:block}
-canvas.na{width:100%;height:280px;display:block;background:#0a0e18}
-#kpForecast{white-space:pre-wrap}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;
+  box-shadow:0 10px 24px rgba(0,0,0,.2);
+}
+.card h2{
+  margin:0 0 10px;font-size:12px;color:var(--muted);font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.card img.off,#tgo{
+  width:100%;display:block;border-radius:8px;background:#000;min-height:160px;object-fit:contain;
+}
+#tgo{background:#fff;min-height:120px}
+canvas.na{width:100%;height:280px;display:block;background:#0a0e18;border-radius:8px}
+#kpForecast{white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace;font-size:13px;line-height:1.55}
 .down{color:var(--bad)}.ok{color:var(--ok)}.muted{color:var(--muted);font-size:12px}
+.leaflet-control-attribution{background:rgba(7,11,18,.7)!important;color:#8b97b3!important}
 </style></head>
 <body>
 <header>
   <div class="brand">SpaceWx</div>
-  <div class="muted" id="utc">UTC --:--:--</div>
-  <div class="muted" id="local">Local --:--</div>
-  <div class="muted" id="placeLabel">Grand Forks, ND · ZIP 58201</div>
+  <div class="meta">
+    <div id="utc">UTC --:--:--</div>
+    <div id="local">Local --:--</div>
+    <div id="placeLabel">Grand Forks, ND · ZIP 58201</div>
+  </div>
   <nav><a href="index.html">Live</a><a href="settings.html">Settings</a></nav>
 </header>
 <div class="wrap">
@@ -49,16 +85,16 @@ canvas.na{width:100%;height:280px;display:block;background:#0a0e18}
     <div class="kpi"><span>Hemi GW</span><b id="vHemi">—</b></div>
   </div>
   <div id="map"></div>
-  <div class="muted" id="mapStatus" style="margin:6px 0 0">map</div>
+  <div class="muted" id="mapStatus" style="margin:8px 0 0">map</div>
   <div class="row">
-    <div class="card" style="margin-top:0"><h2>Solar wind · NOAA 24h</h2><img class="off" id="sw24" alt="24-hour solar wind"><div class="muted"><a href="https://www.spaceweather.gov/products/solar-wind" target="_blank" rel="noopener">spaceweather.gov solar wind</a></div></div>
-    <div class="card" style="margin-top:0"><h2>Space weather overview · NOAA</h2><img class="off" id="overview" alt="SWPC overview"></div>
+    <div class="card"><h2>Solar wind · NOAA 24h</h2><img class="off" id="sw24" alt="24-hour solar wind"><div class="muted"><a href="https://www.spaceweather.gov/products/solar-wind" target="_blank" rel="noopener">spaceweather.gov solar wind</a></div></div>
+    <div class="card"><h2>Space weather overview · NOAA</h2><img class="off" id="overview" alt="SWPC overview"></div>
   </div>
   <div class="row">
     <div class="card"><h2>Geospace geomagnetic activity · 3 hour</h2><img class="off" id="geo3h" alt="Geospace 3 hour"></div>
     <div class="card"><h2>Geospace geomagnetic activity · 1 day</h2><img class="off" id="geo1d" alt="Geospace 1 day"><div class="muted"><a href="https://www.spaceweather.gov/products/geospace-geomagnetic-activity-plot" target="_blank" rel="noopener">NOAA geospace plot</a></div></div>
   </div>
-  <div class="card"><h2>Geospace · North America latest</h2><img class="off" id="geoNA" alt="Geospace North America"></div>
+  <div class="card" style="margin-top:14px"><h2>Geospace · North America latest</h2><img class="off" id="geoNA" alt="Geospace North America"></div>
   <div class="row">
     <div class="card"><h2>Hpo / Kp forecast · GFZ Enlil</h2><img class="off" id="hpo" alt="GFZ Hpo Enlil forecast"><div class="muted"><a href="https://isdc-data.gfz.de/geomagnetism/HpoForecast/v0102/output/Hpo/html/hpo_forecast_enlil.html" target="_blank" rel="noopener">GFZ interactive Hpo Enlil</a></div></div>
     <div class="card"><h2>WSA-Enlil · NOAA</h2><img class="off" id="enlil" alt="WSA-Enlil"></div>
