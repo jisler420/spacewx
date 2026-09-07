@@ -16,14 +16,29 @@
 </main>
 <script>
 const DEFAULT={zip:"58201",lat:47.901,lon:-97.0446,place:"Grand Forks, ND",tz:"America/Chicago"};
+function tzFrom(st,lon){
+  if(st==="HI")return "Pacific/Honolulu";
+  if(st==="AK")return "America/Anchorage";
+  if(st==="AZ")return "America/Phoenix";
+  if(lon<=-115)return "America/Los_Angeles";
+  if(lon<=-102)return "America/Denver";
+  if(lon<=-85)return "America/Chicago";
+  return "America/New_York";
+}
 function load(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem("spacewx-cfg")||"{}"))}catch(e){return Object.assign({},DEFAULT)}}
 zip.value=load().zip||"58201";
 save.onclick=async()=>{
  let z=(zip.value||"").replace(/\D/g,"").slice(0,5)||"58201";
  if(!/^\d{5}$/.test(z)){msg.textContent="Need a 5-digit US ZIP.";return;}
  msg.textContent="Looking up "+z+"…";
- try{const r=await fetch("https://api.zippopotam.us/us/"+z);if(!r.ok)throw new Error("unknown ZIP");const j=await r.json();const p=j.places[0];
- const cfg={zip:z,lat:+p.latitude,lon:+p.longitude,place:p["place name"]+", "+p["state abbreviation"],tz:"America/Chicago"};
- localStorage.setItem("spacewx-cfg",JSON.stringify(cfg));msg.textContent="Saved "+cfg.place;}catch(e){msg.textContent="ZIP lookup failed: "+e}
+ try{
+  const r=await fetch("https://api.zippopotam.us/us/"+z);
+  if(!r.ok)throw new Error("unknown ZIP");
+  const j=await r.json(); const p=j.places[0];
+  const lat=+p.latitude, lon=+p.longitude;
+  const cfg={zip:z,lat,lon,place:p["place name"]+", "+p["state abbreviation"],tz:tzFrom(p["state abbreviation"],lon)};
+  localStorage.setItem("spacewx-cfg",JSON.stringify(cfg));
+  msg.textContent="Saved "+cfg.place+" · "+cfg.tz;
+ }catch(e){msg.textContent="ZIP lookup failed: "+e}
 };
 </script></body></html>
