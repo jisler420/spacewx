@@ -94,7 +94,7 @@ let pollMs = 30000;
 let waitTimer = null;
 let beatTimer = null;
 function arm(sec) {
-  const n = [30, 60, 120, 300].indexOf(Number(sec)) >= 0 ? Number(sec) : 30;
+  const n = [30, 60, 120, 300, 600].indexOf(Number(sec)) >= 0 ? Number(sec) : 30;
   pollMs = n * 1000;
   if (waitTimer) clearTimeout(waitTimer);
   if (beatTimer) clearInterval(beatTimer);
