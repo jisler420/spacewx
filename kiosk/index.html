@@ -19,7 +19,9 @@ header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .kpi b{display:block;font-size:22px}
 .kpi span{color:var(--muted);font-size:11px;text-transform:uppercase}
-.mapbox{position:relative;width:100%;aspect-ratio:1/1;border-radius:12px;border:1px solid var(--line);overflow:hidden;margin-bottom:8px;background:#000}
+.maprow{display:grid;grid-template-columns:minmax(220px,35%) minmax(0,1fr);gap:12px;align-items:start;margin-bottom:12px}
+@media(max-width:900px){.maprow{grid-template-columns:1fr}}
+.mapbox{position:relative;width:100%;aspect-ratio:1/1;border-radius:12px;border:1px solid var(--line);overflow:hidden;background:#000}
 #map,.leaflet-container{position:absolute;inset:0;width:100%;height:100%;background:#000}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
 @media(max-width:980px){.cols{grid-template-columns:1fr}}
@@ -64,11 +66,15 @@ th:first-child,td:first-child{text-align:left}
     <div class="kpi"><span>IMF Bz</span><b id="vBz">-</b></div>
     <div class="kpi"><span>Hp30</span><b id="vHp30">-</b></div>
   </div>
-  <div class="mapbox"><div id="map"></div></div>
-  <div class="muted" id="mapStatus">full Earth fitted to this window</div>
-  <div class="card" style="margin:12px 0">
-    <h2>Kp forecast 3-day calendar</h2>
-    <div id="kpForecast" class="muted">-</div>
+  <div class="maprow">
+    <div>
+      <div class="mapbox"><div id="map"></div></div>
+      <div class="muted" id="mapStatus">OVATION oval fitted to this pane</div>
+    </div>
+    <div class="card">
+      <h2>Kp forecast 3-day</h2>
+      <div id="kpForecast" class="muted">-</div>
+    </div>
   </div>
   <div class="cols">
     <div class="card"><h2>Solar wind speed km/s</h2><canvas class="chart" id="spdPlot"></canvas><div class="muted">Last 2.5 hours UTC</div></div>
@@ -78,9 +84,9 @@ th:first-child,td:first-child{text-align:left}
     <div class="card"><h2>GOES Hp nT</h2><canvas class="chart" id="goesPlot"></canvas><div class="muted" id="goesStatus">Last 2.5 hours</div></div>
     <div class="card"><h2>Dst nT</h2><canvas class="chart" id="dstCanvas"></canvas><div class="muted">Last 2.5 hours</div></div>
     <div class="card"><h2>Hp30</h2><canvas class="chart" id="hp30Plot"></canvas><div class="muted">GFZ nowcast</div></div>
-    <div class="card"><h2>TGO Europe H</h2><img id="tgo" alt="TGO" referrerpolicy="no-referrer"></div>
-    <div class="card"><h2>Hobart BOM</h2><img id="hobart" alt="Hobart"></div>
     <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil"><div class="player"><button type="button" id="enlilPlay">Play</button><input id="enlilScrub" type="range" min="0" max="0" value="0"><span class="muted" id="enlilStamp"></span></div></div>
+    <div class="card"><h2>Hobart BOM</h2><img id="hobart" alt="Hobart"></div>
+    <div class="card"><h2>TGO Europe H</h2><img id="tgo" alt="TGO" referrerpolicy="no-referrer"></div>
   </div>
 </main>
 </div>
@@ -163,12 +169,17 @@ async function loadWx(){
     const by={};
     kf.forEach(r=>{const t=parseT(r.time_tag);if(!isFinite(t))return;const d=new Date(t);by[d.toISOString().slice(0,10)+"-"+d.getUTCHours()]={kp:r.kp??r.Kp}});
     const start=new Date();start.setUTCHours(0,0,0,0);
-    let html="<table><tr><th>UTC</th><th>00z</th><th>03z</th><th>06z</th><th>09z</th><th>12z</th><th>15z</th><th>18z</th><th>21z</th></tr>";
+    const days=[];
     for(let i=0;i<3;i++){
       const day=new Date(start.getTime()+i*86400000),date=day.toISOString().slice(0,10);
-      const label=day.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:"UTC"});
-      html+="<tr><td>"+label+"</td>";
-      for(let h=0;h<24;h+=3){const s=by[date+"-"+h];html+="<td>"+(s&&isFinite(s.kp)?Number(s.kp).toFixed(1):"-")+"</td>"}
+      days.push({date:date,label:day.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:"UTC"})});
+    }
+    let html="<table><tr><th>UTC</th>";
+    days.forEach(function(d){html+="<th>"+d.label+"</th>"});
+    html+="</tr>";
+    for(let h=0;h<24;h+=3){
+      html+="<tr><td>"+String(h).padStart(2,"0")+"z</td>";
+      days.forEach(function(d){const s=by[d.date+"-"+h];html+="<td>"+(s&&isFinite(s.kp)?Number(s.kp).toFixed(1):"-")+"</td>"});
       html+="</tr>";
     }
     kpForecast.innerHTML=html+"</table>";
@@ -236,25 +247,37 @@ loadAurora=async function(){
   const coords=o.coordinates||o;
   if(auroraLayer)map.removeLayer(auroraLayer);
   auroraLayer=L.layerGroup();
+  const levels=[[8,"#166534",.2],[18,"#22c55e",.26],[32,"#84cc16",.3],[50,"#facc15",.36],[70,"#fff7ed",.42]];
+  function smooth(vals){if(vals.length<3)return vals;return vals.map(function(_,i){return (vals[(i+vals.length-1)%vals.length]+vals[i]+vals[(i+1)%vals.length])/3})}
+  function ring(thresh,north){
+    const eq={},pol={};
+    for(let i=0;i<coords.length;i++){
+      const p=coords[i];if(!p||p[2]<thresh)continue;
+      if(north&&p[1]<20)continue;if(!north&&p[1]>-20)continue;
+      const lon=Math.round((p[0]>180?p[0]-360:p[0])/2)*2;
+      if(north){eq[lon]=Math.min(eq[lon]==null?90:eq[lon],p[1]);pol[lon]=Math.max(pol[lon]==null?0:pol[lon],p[1])}
+      else{eq[lon]=Math.max(eq[lon]==null?-90:eq[lon],p[1]);pol[lon]=Math.min(pol[lon]==null?0:pol[lon],p[1])}
+    }
+    const lons=Object.keys(eq).map(Number).sort(function(a,b){return a-b});
+    if(lons.length<8)return null;
+    const e=smooth(lons.map(function(l){return eq[l]})), r=smooth(lons.map(function(l){return pol[l]}));
+    return lons.map(function(lon,i){return [e[i],lon]}).concat(lons.map(function(lon,i){return [r[i],lon]}).reverse());
+  }
+  levels.forEach(function(lvl){
+    [true,false].forEach(function(north){
+      const poly=ring(lvl[0],north); if(!poly)return;
+      L.polygon(poly,{stroke:false,fillColor:lvl[1],fillOpacity:lvl[2],interactive:false}).addTo(auroraLayer);
+    });
+  });
+  auroraLayer.addTo(map);
   let best=0,bestD=1e9;
-  const byN={}, byS={};
   for(let i=0;i<coords.length;i++){
     const p=coords[i];if(!p||p.length<3)continue;
-    const lon=p[0]>180?p[0]-360:p[0];
-    const a=p[1]-cfg.lat,b=lon-cfg.lon,dd=a*a+b*b;
+    const lon=p[0]>180?p[0]-360:p[0],a=p[1]-cfg.lat,b=lon-cfg.lon,dd=a*a+b*b;
     if(dd<bestD){bestD=dd;best=p[2]}
-    if(p[2]<15)continue;
-    const key=Math.round(lon/3)*3;
-    if(p[1]>=0) byN[key]=Math.max(byN[key]|| -90, p[1]);
-    else byS[key]=Math.min(byS[key]||90, p[1]);
   }
-  const nRing=Object.keys(byN).map(Number).sort((a,b)=>a-b).map(lon=>[byN[lon],lon]).filter(p=>p[0]>40);
-  const sRing=Object.keys(byS).map(Number).sort((a,b)=>a-b).map(lon=>[byS[lon],lon]).filter(p=>p[0]<-40);
-  if(nRing.length>3) L.polygon(nRing.concat([[88,nRing[nRing.length-1][1]],[88,nRing[0][1]]]),{stroke:false,fillColor:"#22c55e",fillOpacity:.28,interactive:false}).addTo(auroraLayer);
-  if(sRing.length>3) L.polygon(sRing.concat([[-88,sRing[sRing.length-1][1]],[-88,sRing[0][1]]]),{stroke:false,fillColor:"#22c55e",fillOpacity:.28,interactive:false}).addTo(auroraLayer);
-  auroraLayer.addTo(map);
   vAurora.textContent=Math.round(best)+"%";
-  mapStatus.textContent="full Earth fitted to this window";
+  mapStatus.textContent="OVATION oval · night terminator";
 };
 }catch(err){if(mapStatus)mapStatus.textContent="map unavailable"}
 const ENLIL_DIR="https://services.swpc.noaa.gov/images/animations/enlil/";
