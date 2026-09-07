@@ -90,4 +90,11 @@ onmessage = function (e) {
 };
 
 loop();
-setInterval(loop, 60000);
+function msToNextMinute() {
+  const n = Date.now();
+  return 60000 - (n % 60000);
+}
+setTimeout(function () {
+  loop();
+  setInterval(loop, 60000);
+}, msToNextMinute());
