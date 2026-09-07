@@ -82,7 +82,7 @@ th:first-child,td:first-child{text-align:left}
     </div>
   </div>
   <div class="cols">
-    <div class="card swcard"><h2>Solar Wind · KNMI HAPI</h2><canvas id="swPlot"></canvas><div class="muted" id="swStatus">last 3 days · live 60s</div></div>
+    <div class="card swcard"><h2>Solar Wind · KNMI HAPI</h2><canvas id="swPlot"></canvas><div class="muted" id="swStatus">last 36 hours · live 60s</div></div>
     <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil"><div class="player"><button type="button" id="enlilPlay">Play</button><input id="enlilScrub" type="range" min="0" max="0" value="0"><span class="muted" id="enlilStamp"></span></div></div>
     <div class="card"><h2>Hobart BOM</h2><img id="hobart" alt="Hobart"></div>
     <div class="card"><h2>TGO Europe H</h2><img id="tgo" alt="TGO" referrerpolicy="no-referrer"></div>
@@ -151,7 +151,7 @@ function drawWindImf(){
 function samp(arr,n){if(!arr||!arr.length)return [];if(arr.length<=n)return arr;const out=[],step=arr.length/n;for(let i=0;i<n;i++)out.push(arr[Math.min(arr.length-1,Math.floor(i*step))]);return out}
 function drawSw(){
   const el=document.getElementById("swPlot"); if(!el)return;
-  const now=Date.now(),t0=now-3*86400000,t1=now;
+  const now=Date.now(),t0=now-36*3600000,t1=now;
   const box=el.parentElement,cssW=Math.max(640,box.clientWidth||960),cssH=820,dpr=Math.min(2,window.devicePixelRatio||1);
   el.width=Math.round(cssW*dpr);el.height=Math.round(cssH*dpr);el.style.width=cssW+"px";el.style.height=cssH+"px";
   const ctx=el.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -180,13 +180,13 @@ function drawSw(){
   const barW=Math.max(2,(30*60*1000)/span*pw-1);
   (hapiPack.hp||[]).forEach(function(r){if(!isFinite(r.Hp30))return;const x=xAt(r.t),y=yAt(y5,p5.h,p5.ymin,p5.ymax,0,r.Hp30);ctx.fillStyle=r.Hp30>=5?"#f59e0b":"#4ade80";ctx.fillRect(x,y,barW,y5+p5.h-y)});
   ctx.fillStyle="#8b97b3";ctx.font="10px sans-serif";ctx.textAlign="center";
-  for(let d=-3;d<=0;d++){const t=now+d*86400000,dt=new Date(t);ctx.fillText(dt.toISOString().slice(8,10)+" "+String(dt.getUTCHours()).padStart(2,"0")+"z",xAt(t),cssH-6)}
+  for(let h=0;h<=36;h+=6){const t=t0+h*3600000,dt=new Date(t);ctx.fillText(String(dt.getUTCHours()).padStart(2,"0")+"z",xAt(t),cssH-6)}
 }
 function drawDst(){const d=Number(last(cache.dst).dst);vDst.textContent=isFinite(d)?Math.round(d)+" nT":"-"}
 function drawHp30(){const d=Number(last(cache.hp30).hp30);vHp30.textContent=isFinite(d)?d.toFixed(1):"-"}
 function drawAll(){drawWindImf()}
 async function loadWindImf(){
-  const now=new Date(),start=isoH(new Date(now.getTime()-3*86400000)),stop=isoH(now);
+  const now=new Date(),start=isoH(new Date(now.getTime()-36*3600000)),stop=isoH(now);
   const [xray,prot,mag,plasma,enlil,kp,hp,kpf]=await Promise.all([
     hapi("xray_flux_rt","xray_flux_long,xray_flux_short",start,stop),
     hapi("proton_flux_500_rt","proton_flux_10MeV,proton_flux_50MeV,proton_flux_100MeV,proton_flux_500MeV",start,stop),
@@ -200,7 +200,7 @@ async function loadWindImf(){
   hapiPack.xray=xray;hapiPack.prot=prot;hapiPack.mag=mag;hapiPack.plasma=plasma;hapiPack.enlil=enlil;hapiPack.kp=kp;hapiPack.hp=hp;hapiPack.kpf=kpf;
   const lm=last(mag);
   imfStatus.textContent=mag.length?("KNMI "+new Date(lm.t).toISOString().slice(0,16)+"Z"):"HAPI down";
-  if(swStatus) swStatus.textContent="KNMI HAPI live · "+mag.length+" IMF / "+plasma.length+" plasma pts · last 3 days";
+  if(swStatus) swStatus.textContent="KNMI HAPI live · "+mag.length+" IMF / "+plasma.length+" plasma pts · last 36h";
   drawWindImf();
 }
 async function loadWx(){
