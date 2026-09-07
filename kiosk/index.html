@@ -22,7 +22,9 @@ header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-
 .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:980px){.cols{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
-.card h2{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.card h2{margin:0;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+select.win{background:#101827;color:var(--text);border:1px solid var(--line);border-radius:999px;padding:3px 8px;font-size:12px}
 .card img,canvas{width:100%;display:block;border-radius:8px;background:#000}canvas.chart{height:210px;background:#0a0e18}
 .big{font-size:28px;font-weight:700}.muted{color:var(--muted);font-size:12px}.ok{color:var(--ok)}.down{color:var(--bad)}
 table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:4px 0;border-bottom:1px solid #1d2738;text-align:left}
@@ -50,18 +52,18 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:4px 0;bor
   <div class="muted" id="mapStatus" style="margin:-6px 0 12px">Auroral oval + night terminator</div>
   <div class="cols">
     <div class="card"><h2>Kp-index forecast</h2><div id="kpForecast" class="muted">&mdash;</div></div>
-    <div class="card"><h2>Solar wind speed &middot; km/s</h2><canvas class="chart" id="spdPlot"></canvas><div class="muted">Y = km/s &middot; X = older &rarr; now UTC</div></div>
-    <div class="card"><h2>Solar wind density &middot; p/cm&sup3;</h2><canvas class="chart" id="denPlot"></canvas><div class="muted">Y = protons/cm&sup3; &middot; X = older &rarr; now UTC</div></div>
-    <div class="card"><h2>IMF Bt &middot; nT</h2><canvas class="chart" id="btPlot"></canvas><div class="muted">Total interplanetary field</div></div>
-    <div class="card"><h2>IMF Bz &middot; nT</h2><canvas class="chart" id="bzPlot"></canvas><div class="muted">South (negative) favors aurora</div></div>
+    <div class="card"><div class="card-head"><h2>Solar wind speed &middot; km/s</h2><select class="win" data-win="spd"></select></div><canvas class="chart" id="spdPlot"></canvas><div class="muted">Y = km/s &middot; X = older &rarr; now UTC</div></div>
+    <div class="card"><div class="card-head"><h2>Solar wind density &middot; p/cm&sup3;</h2><select class="win" data-win="den"></select></div><canvas class="chart" id="denPlot"></canvas><div class="muted">Y = protons/cm&sup3; &middot; X = older &rarr; now UTC</div></div>
+    <div class="card"><div class="card-head"><h2>IMF Bt &middot; nT</h2><select class="win" data-win="bt"></select></div><canvas class="chart" id="btPlot"></canvas><div class="muted">Total interplanetary field</div></div>
+    <div class="card"><div class="card-head"><h2>IMF Bz &middot; nT</h2><select class="win" data-win="bz"></select></div><canvas class="chart" id="bzPlot"></canvas><div class="muted">South (negative) favors aurora</div></div>
     <div class="card"><h2>Hemispheric power &middot; GW</h2><div class="big" id="vHemi">&mdash;</div><div class="muted">North / South from NOAA nowcast</div></div>
-    <div class="card"><h2>GOES magnetometer Hp &middot; nT</h2><canvas class="chart" id="goesPlot"></canvas><div class="muted" id="goesStatus">Hp nT</div></div>
-    <div class="card"><h2>Dst &middot; Kyoto / NOAA &middot; nT</h2><canvas class="chart" id="dstCanvas"></canvas><div class="muted">More negative = stronger ring current</div></div>
+    <div class="card"><div class="card-head"><h2>GOES magnetometer Hp &middot; nT</h2><select class="win" data-win="goes"></select></div><canvas class="chart" id="goesPlot"></canvas><div class="muted" id="goesStatus">Hp nT</div></div>
+    <div class="card"><div class="card-head"><h2>Dst &middot; Kyoto / NOAA &middot; nT</h2><select class="win" data-win="dst"></select></div><canvas class="chart" id="dstCanvas"></canvas><div class="muted">More negative = stronger ring current. Hourly points.</div></div>
     <div class="card"><h2>Kiruna &middot; IRF</h2><img id="kiruna" alt="Kiruna"><div class="muted">Official IRF live plot</div></div>
     <div class="card"><h2>TGO Europe H stackplot</h2><img id="tgo" alt="TGO" referrerpolicy="no-referrer" style="background:#fff"><div class="muted">Tromso Geophysical Observatory</div></div>
     <div class="card"><h2>Hobart &middot; BOM SWS</h2><img id="hobart" alt="Hobart"><div class="muted">Australian live magnetogram</div></div>
     <div class="card"><h2>CANMOS Canada</h2><p class="muted"><a href="https://geomag.nrcan.gc.ca/plot-tracee/ssp-1-en.php" target="_blank" rel="noopener">Open NRCan 24h CANMOS plot</a></p><div class="muted">No stable public JSON from NRCan.</div></div>
-    <div class="card"><h2>Solar flares &middot; GOES 0.1-0.8 nm</h2><canvas class="chart" id="xrayPlot"></canvas><div class="muted" id="flareNote">Current / 6h max</div></div>
+    <div class="card"><div class="card-head"><h2>Solar flares &middot; GOES 0.1-0.8 nm</h2><select class="win" data-win="xray"></select></div><canvas class="chart" id="xrayPlot"></canvas><div class="muted" id="flareNote">Current / window max</div></div>
     <div class="card"><h2>Sunspot regions</h2><div id="spots">&mdash;</div></div>
     <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil"><div class="player"><button type="button" id="enlilPlay">Play</button><input id="enlilScrub" type="range" min="0" max="0" value="0"><span class="muted" id="enlilStamp"></span></div></div>
   </div>
@@ -77,12 +79,17 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:4px 0;bor
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const DEFAULT={zip:"58201",lat:47.901,lon:-97.0446,place:"Grand Forks, ND",tz:"America/Chicago"};
+const WIN_OPTS=[1,2.5,6,12,24];
 function loadCfg(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem("spacewx-cfg")||"{}"))}catch(e){return Object.assign({},DEFAULT)}}
 let cfg=loadCfg();
+function winHours(id){const v=Number(localStorage.getItem("spacewx-win-"+id));return WIN_OPTS.includes(v)?v:2.5}
+function setWin(id,h){localStorage.setItem("spacewx-win-"+id,String(h))}
+function parseT(t){const s=String(t||"");const d=Date.parse(/Z$|[+-]\d\d:?\d\d$/.test(s)?s:s+"Z");return isNaN(d)?0:d}
+function sliceWin(rows,hours){const cut=Date.now()-hours*3600*1000;return rows.filter(r=>parseT(r.t)>=cut)}
+function sample(arr,n){if(!arr.length)return[];const step=Math.max(1,Math.floor(arr.length/n));return arr.filter((_,i)=>i%step===0)}
 async function grab(u){const r=await fetch(u,{cache:"no-store"});if(!r.ok)throw new Error(r.status);return ((r.headers.get("content-type")||"").includes("json")||u.endsWith(".json"))?r.json():r.text()}
 const last=a=>Array.isArray(a)?a[a.length-1]:a;
 function bust(u){return u+(u.includes("?")?"&":"?")+"t="+Date.now()}
-function sample(arr,n){if(!arr.length)return[];const step=Math.max(1,Math.floor(arr.length/n));return arr.filter((_,i)=>i%step===0)}
 function chart(canvas, series, unit){
   const c=canvas,w=c.width=Math.max(520,c.clientWidth*2),h=c.height=420,ctx=c.getContext("2d");
   const L=54,R=12,T=12,B=28,pw=w-L-R,ph=h-T-B;
@@ -100,25 +107,62 @@ function chart(canvas, series, unit){
   series.forEach(s=>{ctx.strokeStyle=s.color;ctx.lineWidth=2;ctx.beginPath();s.y.forEach((v,i)=>{if(!isFinite(v))return;const x=L+i/Math.max(1,s.y.length-1)*pw,y=yAt(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()});
 }
 function xrayClass(f){f=Number(f);if(!isFinite(f))return "\u2014";if(f>=1e-4)return "X"+(f/1e-4).toFixed(1);if(f>=1e-5)return "M"+(f/1e-5).toFixed(1);if(f>=1e-6)return "C"+(f/1e-6).toFixed(1);if(f>=1e-7)return "B"+(f/1e-7).toFixed(1);return "A"+(f/1e-8).toFixed(1)}
+
+const STORE={wind:[],mag:[],goes:[],dst:[],xray:[]};
+function drawWind(){
+  const sw=sample(sliceWin(STORE.wind,winHours("spd")),240);
+  const dw=sample(sliceWin(STORE.wind,winHours("den")),240);
+  chart(spdPlot,[{color:"#fbbf24",y:sw.map(r=>r.speed)}],"km/s");
+  chart(denPlot,[{color:"#a78bfa",y:dw.map(r=>r.den)}],"p/cm3");
+}
+function drawImf(){
+  const bt=sample(sliceWin(STORE.mag,winHours("bt")),240);
+  const bz=sample(sliceWin(STORE.mag,winHours("bz")),240);
+  chart(btPlot,[{color:"#fbbf24",y:bt.map(r=>r.bt)}],"Bt nT");
+  chart(bzPlot,[{color:"#60a5fa",y:bz.map(r=>r.bz)}],"Bz nT");
+}
+function drawGoes(){
+  const rows=sample(sliceWin(STORE.goes,winHours("goes")),240);
+  chart(goesPlot,[{color:"#fbbf24",y:rows.map(r=>r.hp)}],"Hp nT");
+  const lastR=rows[rows.length-1]||STORE.goes[STORE.goes.length-1]||{};
+  goesStatus.textContent="GOES-"+(lastR.sat||"?")+" · "+winHours("goes")+"h window · nT";
+}
+function drawDst(){
+  const rows=sliceWin(STORE.dst,winHours("dst"));
+  chart(dstCanvas,[{color:"#60a5fa",y:rows.map(r=>r.dst)}],"Dst nT");
+}
+function drawXray(){
+  const rows=sample(sliceWin(STORE.xray,winHours("xray")),240);
+  const fluxes=rows.map(r=>r.flux).filter(isFinite);
+  chart(xrayPlot,[{color:"#fb7185",y:fluxes.map(v=>Math.log10(Math.max(v,1e-9)))}],"log flux");
+  const cur=STORE.xray[STORE.xray.length-1]||{};
+  const maxW=Math.max(0,...fluxes);
+  vXray.textContent=xrayClass(cur.flux);
+  flareNote.textContent="Now "+xrayClass(cur.flux)+" · "+winHours("xray")+"h max "+xrayClass(maxW);
+}
+function bindWins(){
+  document.querySelectorAll("select.win").forEach(sel=>{
+    const id=sel.dataset.win;
+    sel.innerHTML=WIN_OPTS.map(h=>`<option value="${h}">${h}h</option>`).join("");
+    sel.value=String(winHours(id));
+    sel.onchange=()=>{setWin(id,Number(sel.value)); if(id==="spd"||id==="den")drawWind(); else if(id==="bt"||id==="bz")drawImf(); else if(id==="goes")drawGoes(); else if(id==="dst")drawDst(); else if(id==="xray")drawXray();};
+  });
+}
 async function loadWindImf(){
   try{
     const [wind,mag]=await Promise.all([
       grab("https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json"),
       grab("https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json")
     ]);
-    const w=(Array.isArray(wind)?wind:[]).filter(r=>isFinite(Number(r.proton_speed))).sort((a,b)=>String(a.time_tag).localeCompare(String(b.time_tag)));
-    const m=(Array.isArray(mag)?mag:[]).filter(r=>isFinite(Number(r.bt))).sort((a,b)=>String(a.time_tag).localeCompare(String(b.time_tag)));
-    const ws=sample(w,180), ms=sample(m,180);
-    chart(spdPlot,[{color:"#fbbf24",y:ws.map(r=>Number(r.proton_speed))}],"km/s");
-    chart(denPlot,[{color:"#a78bfa",y:ws.map(r=>Number(r.proton_density))}],"p/cm3");
-    chart(btPlot,[{color:"#fbbf24",y:ms.map(r=>Number(r.bt))}],"Bt nT");
-    chart(bzPlot,[{color:"#60a5fa",y:ms.map(r=>Number(r.bz_gsm))}],"Bz nT");
-    const lw=ws[ws.length-1]||{}, lm=ms[ms.length-1]||{};
-    vWind.textContent=isFinite(lw.proton_speed)?Math.round(lw.proton_speed)+" km/s":"\u2014";
-    vDen.textContent=isFinite(lw.proton_density)?Number(lw.proton_density).toFixed(1)+" p/cm3":"\u2014";
+    STORE.wind=(Array.isArray(wind)?wind:[]).map(r=>({t:r.time_tag,speed:Number(r.proton_speed),den:Number(r.proton_density),src:r.source})).filter(r=>r.t&&isFinite(r.speed)).sort((a,b)=>parseT(a.t)-parseT(b.t));
+    STORE.mag=(Array.isArray(mag)?mag:[]).map(r=>({t:r.time_tag,bt:Number(r.bt),bz:Number(r.bz_gsm),src:r.source})).filter(r=>r.t&&isFinite(r.bt)).sort((a,b)=>parseT(a.t)-parseT(b.t));
+    drawWind();drawImf();
+    const lw=STORE.wind[STORE.wind.length-1]||{}, lm=STORE.mag[STORE.mag.length-1]||{};
+    vWind.textContent=isFinite(lw.speed)?Math.round(lw.speed)+" km/s":"\u2014";
+    vDen.textContent=isFinite(lw.den)?Number(lw.den).toFixed(1)+" p/cm3":"\u2014";
     vBt.textContent=isFinite(lm.bt)?Number(lm.bt).toFixed(1)+" nT":"\u2014";
-    vBz.textContent=isFinite(lm.bz_gsm)?Number(lm.bz_gsm).toFixed(1)+" nT":"\u2014";
-    imfStatus.textContent=(lm.source||lw.source||"L1")+" "+String(lm.time_tag||lw.time_tag||"");
+    vBz.textContent=isFinite(lm.bz)?Number(lm.bz).toFixed(1)+" nT":"\u2014";
+    imfStatus.textContent=(lm.src||lw.src||"L1")+" "+String(lm.t||lw.t||"");
   }catch(e){imfStatus.textContent="IMF / wind DOWN"}
 }
 async function loadWx(){
@@ -127,7 +171,7 @@ async function loadWx(){
       grab("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"),
       grab("https://services.swpc.noaa.gov/products/noaa-scales.json"),
       grab("https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"),
-      grab("https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json"),
+      grab("https://services.swpc.noaa.gov/json/goes/primary/xrays-1-day.json"),
       grab("https://services.swpc.noaa.gov/products/kyoto-dst.json"),
       grab("https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt")
     ]);
@@ -135,15 +179,10 @@ async function loadWx(){
     const n=sc["0"]||{}; vRsg.textContent="R"+(n.R&&n.R.Scale||0)+" S"+(n.S&&n.S.Scale||0)+" G"+(n.G&&n.G.Scale||0);
     const rows=Array.isArray(kf)?kf.filter(r=>r.observed!=="observed").slice(0,8):[];
     kpForecast.innerHTML=rows.map(r=>String(r.time_tag||"").slice(5,16)+" \u00b7 Kp "+(r.kp??r.Kp??"")).join("<br>")||"\u2014";
-    const xrRows=Array.isArray(xr)?xr.filter(r=>String(r.energy||"").includes("0.1-0.8")):[];
-    const fluxes=xrRows.map(r=>Number(r.flux)).filter(isFinite);
-    chart(xrayPlot,[{color:"#fb7185",y:fluxes.map(v=>Math.log10(Math.max(v,1e-9)))}],"log flux");
-    const cur=last(xrRows)||{}; const max2=Math.max(...fluxes.slice(-120),0);
-    vXray.textContent=xrayClass(cur.flux);
-    flareNote.textContent="Now "+xrayClass(cur.flux)+" \u00b7 6h max "+xrayClass(max2);
-    const dvals=(Array.isArray(dst)?dst.slice(-72):[]).map(r=>Number(r.dst));
-    chart(dstCanvas,[{color:"#60a5fa",y:dvals}],"Dst nT");
-    const d=Number((last(dst)||{}).dst); vDst.textContent=isFinite(d)?Math.round(d)+" nT":"\u2014";
+    STORE.xray=(Array.isArray(xr)?xr:[]).filter(r=>String(r.energy||"").includes("0.1-0.8")).map(r=>({t:r.time_tag,flux:Number(r.flux)})).filter(r=>r.t&&isFinite(r.flux));
+    STORE.dst=(Array.isArray(dst)?dst:[]).map(r=>({t:r.time_tag,dst:Number(r.dst)})).filter(r=>r.t&&isFinite(r.dst));
+    drawXray();drawDst();
+    const d=Number((STORE.dst[STORE.dst.length-1]||{}).dst); vDst.textContent=isFinite(d)?Math.round(d)+" nT":"\u2014";
     const lines=String(hemi).trim().split(/\n/).filter(l=>l&&!l.startsWith("#"));
     const p=(lines.pop()||"").trim().split(/\s+/);
     vHemi.textContent=(p[p.length-2]||"\u2014")+" / "+(p[p.length-1]||"\u2014")+" GW";
@@ -152,11 +191,9 @@ async function loadWx(){
 }
 async function loadGoes(){
   try{
-    const j=await grab("https://services.swpc.noaa.gov/json/goes/primary/magnetometers-6-hour.json");
-    const rows=Array.isArray(j)?j:[];
-    chart(goesPlot,[{color:"#fbbf24",y:rows.map(r=>Number(r.Hp))}],"Hp nT");
-    const lastR=rows[rows.length-1]||{};
-    goesStatus.textContent="GOES-"+(lastR.satellite||"?")+" Hp nT \u00b7 6 hours";
+    const j=await grab("https://services.swpc.noaa.gov/json/goes/primary/magnetometers-1-day.json");
+    STORE.goes=(Array.isArray(j)?j:[]).map(r=>({t:r.time_tag,hp:Number(r.Hp),sat:r.satellite})).filter(r=>r.t&&isFinite(r.hp));
+    drawGoes();
   }catch(e){goesStatus.textContent="GOES DOWN"}
 }
 async function loadSpots(){
@@ -219,6 +256,7 @@ function tick(){
   try{const loc=n.toLocaleTimeString("en-US",{timeZone:cfg.tz,hour12:false}); local.textContent="Local "+loc; railLocal.textContent=loc+" "+(cfg.tz||"")}catch(e){}
   placeLabel.textContent=(cfg.place||"")+" "+(cfg.zip||"");
 }
+bindWins();
 drawNight(); tick(); loadWx(); loadWindImf(); loadGoes(); loadSpots(); loadImgs(); loadAurora(); loadEnlil();
 setInterval(tick,1000); setInterval(drawNight,60000);
 setInterval(loadWx,60000); setInterval(loadWindImf,180000); setInterval(loadGoes,180000);
