@@ -7,9 +7,9 @@
 </head>
 <body><main>
 <h1>Settings</h1>
-<p class="muted">US 5-digit ZIP or GPS lat, lon (5 digits after the decimal). Coordinates win if both are filled. Blank ZIP uses Grand Forks 58201.</p>
+<p class="muted">US 5-digit ZIP or GPS lat, lon (5 digits after the decimal). Coordinates win if both are filled. Leave both blank for the default 30.02449, -97.90720.</p>
 <label>ZIP code</label>
-<input id="zip" maxlength="5" inputmode="numeric" placeholder="58201">
+<input id="zip" maxlength="5" inputmode="numeric" placeholder="optional">
 <label>GPS coordinates</label>
 <input id="coords" placeholder="63.27375, 18.61269">
 <div id="msg" class="muted"></div>
@@ -17,7 +17,7 @@
 <a href="index.html">Back to live</a>
 </main>
 <script>
-const DEFAULT={zip:"58201",lat:47.901,lon:-97.0446,place:"Grand Forks, ND",tz:"America/Chicago"};
+const DEFAULT={zip:"",lat:30.02449,lon:-97.9072,place:"30.02449, -97.90720",tz:"America/Chicago"};
 function tzFrom(lon){
   if(lon<=-155)return "Pacific/Honolulu";
   if(lon<=-130)return "America/Anchorage";
@@ -48,7 +48,14 @@ save.onclick=async()=>{
     msg.textContent="Saved "+cfg.place+" · "+cfg.tz;
     return;
   }
-  let z=(zip.value||"").replace(/\D/g,"").slice(0,5)||"58201";
+  let z=(zip.value||"").replace(/\D/g,"").slice(0,5);
+  if(!z){
+    localStorage.setItem("spacewx-cfg",JSON.stringify(DEFAULT));
+    coords.value=DEFAULT.place;
+    zip.value="";
+    msg.textContent="Saved default "+DEFAULT.place+" · "+DEFAULT.tz;
+    return;
+  }
   if(!/^\d{5}$/.test(z)){msg.textContent="Need a 5-digit US ZIP or lat, lon.";return;}
   msg.textContent="Looking up "+z+"…";
   try{
