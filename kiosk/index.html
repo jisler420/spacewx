@@ -80,7 +80,7 @@ th:first-child,td:first-child{text-align:left}
   </div>
   <div class="kpis" style="grid-template-columns:repeat(2,1fr)">
     <div class="kpi"><span>Hemispheric power now N/S</span><b id="vHemi">-</b></div>
-    <div class="kpi"><span>15-min average N/S</span><b id="vHemiAvg">-</b></div>
+    <div class="kpi"><span>15-min average N/S</span><b id="vHemiAvg">-</b><div class="muted" id="hemiAvgNote">poll average</div></div>
   </div>
   <div class="kpis">
     <div class="kpi"><span>Kp now</span><b id="vKp">-</b></div>
@@ -151,6 +151,33 @@ function kpGCell(k){
   if(!isFinite(k)) return "—";
   const g=gFromKp(k);
   return "<span class=\"kp\">"+k.toFixed(1)+"</span>"+(g!=="G0"?"<span class=\"g "+g.toLowerCase()+"\">"+g+"</span>":"");
+}
+const hemiSamples=[];
+function applyHemi(hemi){
+  if(!hemi)return;
+  const lines=String(hemi).trim().split(/\n/).filter(l=>l&&!l.startsWith("#")).map(l=>l.trim().split(/\s+/)).filter(p=>p.length>=4);
+  const last3=lines.slice(-3),cur=lines[lines.length-1]||[];
+  const nNow=+cur[2], sNow=+cur[3];
+  vHemi.textContent=(isFinite(nNow)?Math.round(nNow):"-")+" / "+(isFinite(sNow)?Math.round(sNow):"-")+" GW";
+  tone(vHemi,"hemi",Math.max(nNow||0,sNow||0));
+  const poll=[30,60,120,300,600].indexOf(+cfg.pollSec)>=0?+cfg.pollSec:30;
+  const note=document.getElementById("hemiAvgNote");
+  if(poll===600){
+    const avg=i=>last3.length?last3.reduce((s,p)=>s+(+p[i]||0),0)/last3.length:NaN;
+    vHemiAvg.textContent=(isFinite(avg(2))?Math.round(avg(2)):"-")+" / "+(isFinite(avg(3))?Math.round(avg(3)):"-")+" GW";
+    tone(vHemiAvg,"hemi",Math.max(avg(2)||0,avg(3)||0));
+    if(note) note.textContent="Last three 5-min file samples · 10-min poll";
+    return;
+  }
+  if(isFinite(nNow)&&isFinite(sNow)) hemiSamples.push({t:Date.now(),n:nNow,s:sNow});
+  const cut=Date.now()-15*60000;
+  while(hemiSamples.length&&hemiSamples[0].t<cut) hemiSamples.shift();
+  if(!hemiSamples.length){vHemiAvg.textContent="-";if(note) note.textContent="Waiting for poll samples";return}
+  const an=hemiSamples.reduce((s,p)=>s+p.n,0)/hemiSamples.length;
+  const as=hemiSamples.reduce((s,p)=>s+p.s,0)/hemiSamples.length;
+  vHemiAvg.textContent=Math.round(an)+" / "+Math.round(as)+" GW";
+  tone(vHemiAvg,"hemi",Math.max(an,as));
+  if(note) note.textContent=hemiSamples.length+" sample"+(hemiSamples.length===1?"":"s")+" · every "+poll+"s · last 15 min";
 }
 function renderKpForecast(kf){
   if(!Array.isArray(kf)||!kpForecast)return;
@@ -323,7 +350,7 @@ async function loadWx(){
   if(Array.isArray(dst)){cache.dst=dst.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
   if(Array.isArray(dstPred)){cache.dstPred=dstPred.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
   if(Array.isArray(dst)||Array.isArray(dstPred)) drawDst();
-  if(hemi){const lines=String(hemi).trim().split(/\n/).filter(l=>l&&!l.startsWith("#")).map(l=>l.trim().split(/\s+/)).filter(p=>p.length>=4);const last3=lines.slice(-3),cur=lines[lines.length-1]||[];const avg=i=>last3.length?last3.reduce((s,p)=>s+(+p[i]||0),0)/last3.length:NaN;vHemi.textContent=(cur[2]||"-")+" / "+(cur[3]||"-")+" GW";vHemiAvg.textContent=(isFinite(avg(2))?Math.round(avg(2)):"-")+" / "+(isFinite(avg(3))?Math.round(avg(3)):"-")+" GW";tone(vHemi,"hemi",Math.max(+cur[2]||0,+cur[3]||0));tone(vHemiAvg,"hemi",Math.max(avg(2)||0,avg(3)||0))}
+  if(hemi) applyHemi(hemi);
   const ok=[kp,sc,kf,dst,hemi].filter(Boolean).length;feedStatus.textContent=ok>=4?"live":ok?"partial":"DOWN";feedStatus.className=ok>=4?"ok":ok?"muted":"down";drawSw();
 }
 async function loadGoes(){}
@@ -398,7 +425,7 @@ function applyWorkerData(data){
     if(Array.isArray(dst)){cache.dst=dst.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
     if(Array.isArray(data.dstPred)){cache.dstPred=data.dstPred.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
     if(Array.isArray(dst)||Array.isArray(data.dstPred)) drawDst();
-    if(hemi){const lines=String(hemi).trim().split(/\n/).filter(l=>l&&!l.startsWith("#")).map(l=>l.trim().split(/\s+/)).filter(p=>p.length>=4);const last3=lines.slice(-3),cur=lines[lines.length-1]||[];const avg=i=>last3.length?last3.reduce((s,p)=>s+(+p[i]||0),0)/last3.length:NaN;vHemi.textContent=(cur[2]||"-")+" / "+(cur[3]||"-")+" GW";vHemiAvg.textContent=(isFinite(avg(2))?Math.round(avg(2)):"-")+" / "+(isFinite(avg(3))?Math.round(avg(3)):"-")+" GW";tone(vHemi,"hemi",Math.max(+cur[2]||0,+cur[3]||0));tone(vHemiAvg,"hemi",Math.max(avg(2)||0,avg(3)||0))}
+    if(hemi) applyHemi(hemi);
     const ok=[kp,sc,kf,dst,hemi].filter(Boolean).length;feedStatus.textContent=ok>=4?"live":ok?"partial":"DOWN";feedStatus.className=ok>=4?"ok":ok?"muted":"down";
   }
   if(data.hp30txt){
