@@ -27,9 +27,17 @@ header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-
 .mapbox{position:relative;width:100%;min-height:260px;aspect-ratio:2/1;border-radius:12px;border:1px solid var(--line);overflow:hidden;background:#000}
 .maprow .card{height:100%;min-height:260px}
 #earth{position:absolute;inset:0;width:100%;height:100%;display:block}
-td.kp-now{outline:1px solid var(--acc)}
-td.kp-g{color:#86efac}td.kp-4{background:#3b2a10;color:#fde68a}td.kp-5{background:#431407;color:#fdba74}td.kp-7{background:#450a0a;color:#fecaca}
-td.kp-pred{opacity:.8}
+td.kp-now{outline:1px solid var(--acc);background:#102018}
+td.kp-g{color:#cbd5e1}td.kp-4{background:#3b2a10;color:#fde68a}td.kp-5{background:#431407;color:#fdba74}td.kp-7{background:#450a0a;color:#fecaca}
+td.kp-pred{opacity:.78}
+#kpForecast table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+#kpForecast th{padding:4px 2px 8px;font-size:11px;font-weight:600;color:#8b97b3;text-align:center}
+#kpForecast th:first-child,#kpForecast td:first-child{text-align:left;color:#8b97b3;font-size:11px}
+#kpForecast td{padding:5px 2px;text-align:center;border-radius:6px;vertical-align:top}
+#kpForecast .kp{display:block;font-size:15px;font-weight:650;line-height:1.1}
+#kpForecast .g{display:block;font-size:10px;letter-spacing:.06em;margin-top:2px}
+#kpForecast .g0{color:#64748b}#kpForecast .g1{color:#f5d76e}#kpForecast .g2{color:#f59e42}#kpForecast .g3{color:#fb7185}#kpForecast .g4,#kpForecast .g5{color:#f05252}
+#kpForecast .day{display:block;color:#eef3ff}#kpForecast .md{display:block;font-weight:400;color:#8b97b3;font-size:10px}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
 .swcard{grid-column:1/-1}
 #swPlot{width:100%;height:520px;display:block;border-radius:8px;background:#0b1220}
@@ -87,8 +95,9 @@ th:first-child,td:first-child{text-align:left}
       <div class="muted" id="mapStatus">equirectangular Earth · poles visible</div>
     </div>
     <div class="card">
-      <h2>Kp forecast 3-day</h2>
+      <h2>Kp forecast · 3-day</h2>
       <div id="kpForecast" class="muted">-</div>
+      <div class="muted" style="margin-top:8px">NOAA 3-hour slots · G official · outlined = current</div>
     </div>
   </div>
   <div class="cols">
@@ -129,7 +138,43 @@ function auroraLevel(kind,n){
   return 0;
 }
 function gFromKp(k){if(!isFinite(k)||k<5)return "G0";if(k<6)return "G1";if(k<7)return "G2";if(k<8)return "G3";if(k<9)return "G4";return "G5"}
-function kpGCell(k){return isFinite(k)?(k.toFixed(1)+"<div class=\"muted\">"+gFromKp(k)+"</div>"):"-"}
+function kpGCell(k){
+  if(!isFinite(k)) return "—";
+  const g=gFromKp(k);
+  return "<span class=\"kp\">"+k.toFixed(1)+"</span><span class=\"g "+g.toLowerCase()+"\">"+g+"</span>";
+}
+function renderKpForecast(kf){
+  if(!Array.isArray(kf)||!kpForecast)return;
+  const by={};
+  kf.forEach(r=>{const t=parseT(r.time_tag);if(!isFinite(t))return;const d=new Date(t);by[d.toISOString().slice(0,10)+"-"+d.getUTCHours()]={kp:r.kp??r.Kp,kind:r.observed||""}});
+  const start=new Date();start.setUTCHours(0,0,0,0);
+  const days=[];
+  for(let i=0;i<3;i++){
+    const day=new Date(start.getTime()+i*86400000);
+    days.push({
+      date:day.toISOString().slice(0,10),
+      wd:day.toLocaleDateString("en-US",{weekday:"short",timeZone:"UTC"}),
+      md:day.toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"})
+    });
+  }
+  const nowH=Math.floor(new Date().getUTCHours()/3)*3, nowD=new Date().toISOString().slice(0,10);
+  let html="<table><tr><th>UTC</th>";
+  days.forEach(function(d){html+="<th><span class=\"day\">"+d.wd+"</span><span class=\"md\">"+d.md+"</span></th>"});
+  html+="</tr>";
+  for(let h=0;h<24;h+=3){
+    html+="<tr><td>"+String(h).padStart(2,"0")+"–"+String(h+3).padStart(2,"0")+"</td>";
+    days.forEach(function(d){
+      const s=by[d.date+"-"+h], kv=s&&isFinite(s.kp)?Number(s.kp):NaN;
+      let cls="";
+      if(isFinite(kv)) cls=kv>=7?"kp-7":kv>=5?"kp-5":kv>=4?"kp-4":"kp-g";
+      if(s&&String(s.kind).toLowerCase().indexOf("pred")===0) cls+=" kp-pred";
+      if(d.date===nowD&&h===nowH) cls+=" kp-now";
+      html+="<td class=\""+cls+"\">"+kpGCell(kv)+"</td>";
+    });
+    html+="</tr>";
+  }
+  kpForecast.innerHTML=html+"</table>";
+}
 function bust(u){return u+(u.includes("?")?"&":"?")+"t="+Date.now()}
 function sample(arr,n){if(!arr.length)return arr;const step=Math.max(1,Math.floor(arr.length/n));return arr.filter((_,i)=>i%step===0)}
 function parseT(t){let s=String(t||"").trim().replace(" ","T");if(!s)return NaN;s=s.replace(/\.(\d{3})\d+/,".$1");if(!/[zZ]|[+\-]\d{2}:?\d{2}$/.test(s))s+="Z";const ms=Date.parse(s);return isFinite(ms)?ms:NaN}
@@ -265,21 +310,7 @@ async function loadWx(){
   const k=Number((last(kp)||{}).Kp); if(isFinite(k)){vKp.textContent=k.toFixed(1);tone(vKp,"kp",k)}
   if(Array.isArray(kp)) cache.kp=kp;
   if(sc&&sc["0"]){const n=sc["0"];vRsg.textContent="R"+(n.R&&n.R.Scale||0)+" S"+(n.S&&n.S.Scale||0)+" G"+(n.G&&n.G.Scale||0);tone(vRsg,"g",Number(n.G&&n.G.Scale||0))}
-  if(Array.isArray(kf)){
-    const by={};
-    kf.forEach(r=>{const t=parseT(r.time_tag);if(!isFinite(t))return;const d=new Date(t);by[d.toISOString().slice(0,10)+"-"+d.getUTCHours()]={kp:r.kp??r.Kp,kind:r.observed||""}});
-    const start=new Date();start.setUTCHours(0,0,0,0);
-    const days=[];
-    for(let i=0;i<3;i++){const day=new Date(start.getTime()+i*86400000);days.push({date:day.toISOString().slice(0,10),label:day.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:"UTC"})})}
-    const nowH=Math.floor(new Date().getUTCHours()/3)*3, nowD=new Date().toISOString().slice(0,10);
-    let html="<table><tr><th>UTC</th>";days.forEach(function(d){html+="<th>"+d.label+"</th>"});html+="</tr>";
-    for(let h=0;h<24;h+=3){
-      html+="<tr><td>"+String(h).padStart(2,"0")+"z</td>";
-      days.forEach(function(d){const s=by[d.date+"-"+h], kv=s&&isFinite(s.kp)?Number(s.kp):NaN;let cls="";if(isFinite(kv)) cls=kv>=7?"kp-7":kv>=5?"kp-5":kv>=4?"kp-4":"kp-g";if(s&&String(s.kind).toLowerCase().indexOf("pred")===0) cls+=" kp-pred";if(d.date===nowD&&h===nowH) cls+=" kp-now";html+="<td class=\""+cls+"\">"+kpGCell(kv)+"</td>"});
-      html+="</tr>";
-    }
-    kpForecast.innerHTML=html+"</table>";
-  }
+  if(Array.isArray(kf)) renderKpForecast(kf);
   if(Array.isArray(dst)){cache.dst=dst.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
   if(Array.isArray(dstPred)){cache.dstPred=dstPred.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
   if(Array.isArray(dst)||Array.isArray(dstPred)) drawDst();
@@ -349,21 +380,7 @@ function applyWorkerData(data){
     const k=Number((last(kp)||{}).Kp); if(isFinite(k)){vKp.textContent=k.toFixed(1);tone(vKp,"kp",k)}
     if(Array.isArray(kp)) cache.kp=kp;
     if(sc&&sc["0"]){const n=sc["0"];vRsg.textContent="R"+(n.R&&n.R.Scale||0)+" S"+(n.S&&n.S.Scale||0)+" G"+(n.G&&n.G.Scale||0);tone(vRsg,"g",Number(n.G&&n.G.Scale||0))}
-    if(Array.isArray(kf)){
-      const by={};
-      kf.forEach(r=>{const t=parseT(r.time_tag);if(!isFinite(t))return;const d=new Date(t);by[d.toISOString().slice(0,10)+"-"+d.getUTCHours()]={kp:r.kp??r.Kp,kind:r.observed||""}});
-      const start=new Date();start.setUTCHours(0,0,0,0);
-      const days=[];
-      for(let i=0;i<3;i++){const day=new Date(start.getTime()+i*86400000);days.push({date:day.toISOString().slice(0,10),label:day.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:"UTC"})})}
-      const nowH=Math.floor(new Date().getUTCHours()/3)*3, nowD=new Date().toISOString().slice(0,10);
-      let html="<table><tr><th>UTC</th>";days.forEach(function(d){html+="<th>"+d.label+"</th>"});html+="</tr>";
-      for(let h=0;h<24;h+=3){
-        html+="<tr><td>"+String(h).padStart(2,"0")+"z</td>";
-        days.forEach(function(d){const s=by[d.date+"-"+h], kv=s&&isFinite(s.kp)?Number(s.kp):NaN;let cls="";if(isFinite(kv)) cls=kv>=7?"kp-7":kv>=5?"kp-5":kv>=4?"kp-4":"kp-g";if(s&&String(s.kind).toLowerCase().indexOf("pred")===0) cls+=" kp-pred";if(d.date===nowD&&h===nowH) cls+=" kp-now";html+="<td class=\""+cls+"\">"+kpGCell(kv)+"</td>"});
-        html+="</tr>";
-      }
-      kpForecast.innerHTML=html+"</table>";
-    }
+    if(Array.isArray(kf)) renderKpForecast(kf);
     if(Array.isArray(dst)){cache.dst=dst.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
     if(Array.isArray(data.dstPred)){cache.dstPred=data.dstPred.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
     if(Array.isArray(dst)||Array.isArray(data.dstPred)) drawDst();
