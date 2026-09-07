@@ -138,6 +138,7 @@ function auroraLevel(kind,n){
   if(kind==="hemi"){const y=20+t*60,o=50+t*100,r=100+t*150;return n<y?0:n<o?1:n<r?2:3}
   return 0;
 }
+function tone(el,kind,n){if(!el)return;el.className="tone"+auroraLevel(kind,n)}
 function gFromKp(k){if(!isFinite(k)||k<5)return "G0";if(k<6)return "G1";if(k<7)return "G2";if(k<8)return "G3";if(k<9)return "G4";return "G5"}
 function kpGCell(k){
   if(!isFinite(k)) return "—";
@@ -319,7 +320,12 @@ async function loadWx(){
   const ok=[kp,sc,kf,dst,hemi].filter(Boolean).length;feedStatus.textContent=ok>=4?"live":ok?"partial":"DOWN";feedStatus.className=ok>=4?"ok":ok?"muted":"down";drawSw();
 }
 async function loadGoes(){}
-async function loadHp30(){const txt=await settled("./hp30.txt")||await settled("https://kp.gfz.de/fileadmin/files_for_gfz_cms/Hp30_ap30_nowcast.txt");if(!txt){vHp30.textContent="-";return}const rows=[];String(txt).split(/\n/).forEach(line=>{if(!line||line.startsWith("#"))return;const p=line.trim().split(/\s+/);if(p.length<8)return;const hp=Number(p[7]);if(!isFinite(hp)||hp<0)return;const y=+p[0],mo=+p[1],d=+p[2],h=+p[3];rows.push({time_tag:new Date(Date.UTC(y,mo-1,d,Math.floor(h),Math.round((h%1)*60))).toISOString(),hp30:hp})});cache.hp30=rows;drawHp30()}
+async function loadHp30(){
+  const txt=await settled("./hp30.txt");
+  if(!txt)return;
+  const rows=[];String(txt).split(/\n/).forEach(line=>{if(!line||line.startsWith("#"))return;const p=line.trim().split(/\s+/);if(p.length<8)return;const hp=Number(p[7]);if(!isFinite(hp)||hp<0)return;const y=+p[0],mo=+p[1],d=+p[2],h=+p[3];rows.push({time_tag:new Date(Date.UTC(y,mo-1,d,Math.floor(h),Math.round((h%1)*60))).toISOString(),hp30:hp})});
+  if(rows.length){cache.hp30=rows;drawHp30()}
+}
 function loadImgs(){hobart.src=bust("https://www.sws.bom.gov.au/Images/Geophysical/Latest%20Conditions/Magnetograms/Hobart.gif");tgo.src="https://flux.phys.uit.no/cgi-bin/mkstackplot.cgi?GifOnly&&comp=H&nor=&Sync=&t="+Date.now();[hobart,tgo].forEach(img=>{img.onerror=function(){img.style.display="none"}})}
 
 const BASE="https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/export?bbox=-180,-85,180,85&bboxSR=4326&imageSR=4326&size=1600,756&format=png&f=image";
