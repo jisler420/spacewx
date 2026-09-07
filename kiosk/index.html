@@ -6,7 +6,7 @@
 <title>SpaceWx</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-:root{--bg:#07090f;--panel:#101526;--line:#2a3558;--text:#e8eefc;--muted:#8b97b8;--bad:#f87171;--stale:#f59e0b}
+:root{--bg:#07090f;--panel:#101526;--line:#2a3558;--text:#e8eefc;--muted:#8b97b8;--bad:#f87171}
 *{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.3 Segoe UI,system-ui,sans-serif;overflow:hidden}
 a{color:#5eead4}
 .app{display:grid;grid-template-rows:118px 1fr;height:100%}
@@ -47,8 +47,9 @@ async function grab(u){const r=await fetch(u,{cache:"no-store"});if(!r.ok)throw 
 async function first(list){let err;for(const u of list){try{return{data:await grab(u),src:u.split("/").pop()}}catch(e){err=e}}throw err||new Error("down")}
 const last=a=>a&&a[a.length-1];
 function mark(el,cls,t){el.className="badge "+(cls||"");el.textContent=t}
-const map=L.map("map",{worldCopyJump:true}).setView([cfg.lat,cfg.lon],3);
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",{maxZoom:6}).addTo(map);
+const map=L.map("map",{worldCopyJump:true,zoomControl:true}).setView([cfg.lat,cfg.lon],3);
+L.tileLayer("https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",{maxNativeZoom:8,maxZoom:6,attribution:"NASA GIBS"}).addTo(map);
+L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",{maxZoom:6,opacity:0.7,attribution:"Esri"}).addTo(map);
 let pin=L.circleMarker([cfg.lat,cfg.lon],{radius:7,color:"#fb923c",fillColor:"#fb923c",fillOpacity:1}).addTo(map);
 let auroraLayer=null;
 function applyPlace(){placeLabel.textContent=cfg.place||"";zipLabel.textContent="ZIP "+(cfg.zip||"—");tzLabel.textContent="Local · "+cfg.tz;if(pin)map.removeLayer(pin);pin=L.circleMarker([cfg.lat,cfg.lon],{radius:7,color:"#fb923c",fillColor:"#fb923c",fillOpacity:1}).addTo(map)}
@@ -60,7 +61,7 @@ try{const kf=await first(FEEDS.kpf);const rows=Array.isArray(kf.data)?kf.data.sl
 }catch(e){nums.className="big down";mark(feedStatus,"down","DOWN "+e)}}
 async function loadAurora(){try{const o=await first(FEEDS.aurora);const coords=o.data.coordinates||o.data;let best=0;if(auroraLayer)map.removeLayer(auroraLayer);auroraLayer=L.layerGroup();
 for(const p of coords){if(!p||p[2]<8)continue;const lon=p[0]>180?p[0]-360:p[0];L.circleMarker([p[1],lon],{radius:4,stroke:false,fillColor:"#22c55e",fillOpacity:0.22,interactive:false}).addTo(auroraLayer);const a=p[1]-cfg.lat,b=lon-cfg.lon;if(a*a+b*b<16)best=Math.max(best,p[2])}
-auroraLayer.addTo(map);homeAurora.textContent="aurora "+best+"%";mapStatus.textContent="OVATION live"}catch(e){homeAurora.textContent="aurora DOWN";mapStatus.textContent="aurora DOWN"}}
+auroraLayer.addTo(map);homeAurora.textContent="aurora "+best+"%";mapStatus.textContent="NASA GIBS + OVATION"}catch(e){homeAurora.textContent="aurora DOWN";mapStatus.textContent="aurora DOWN"}}
 function loadTgo(){tgo.onload=()=>mark(tgoStatus,"","TGO H · "+new Date().toISOString().slice(11,16)+"Z");tgo.onerror=()=>mark(tgoStatus,"down","TGO DOWN");tgo.src=TGO+"&t="+Date.now()}
 async function loadNA(){const c=naPlot,w=c.width=c.clientWidth*2,h=c.height=c.clientHeight*2,ctx=c.getContext("2d");ctx.fillStyle="#0a0e18";ctx.fillRect(0,0,w,h);
 try{const colors=["#f87171","#60a5fa","#4ade80","#fbbf24"];let i=0;for(const id of NA){const j=await grab("https://geomag.usgs.gov/ws/data/?id="+id+"&format=json");const series=(j.values||[]).find(v=>v.id==="X"||v.id==="H")||j.values&&j.values[0];const vals=(series&&series.values||[]).filter(v=>typeof v==="number");if(vals.length<4)continue;const step=Math.max(1,Math.floor(vals.length/180));const sampled=vals.filter((_,n)=>n%step===0);const min=Math.min(...sampled),max=Math.max(...sampled),span=max-min||1;const y0=20+i*(h-30)/NA.length;ctx.strokeStyle=colors[i%4];ctx.lineWidth=2;ctx.beginPath();sampled.forEach((v,n)=>{const x=n/(sampled.length-1)*w,y=y0-((v-min)/span)*((h-40)/NA.length*0.7);n?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle="#8b97b8";ctx.font="20px sans-serif";ctx.fillText(id,8,y0);i++}mark(naStatus,"","USGS X · "+NA.join(" "))}catch(e){mark(naStatus,"down","USGS DOWN")}}
