@@ -85,7 +85,6 @@ th:first-child,td:first-child{text-align:left}
     <div class="card"><h2>IMF Bt nT</h2><canvas class="chart" id="btPlot"></canvas><div class="muted">Last 2.5 hours UTC</div></div>
     <div class="card"><h2>IMF Bz nT</h2><canvas class="chart" id="bzPlot"></canvas><div class="muted">South favors aurora</div></div>
     <div class="card"><h2>GOES Hp nT</h2><canvas class="chart" id="goesPlot"></canvas><div class="muted" id="goesStatus">Last 2.5 hours</div></div>
-    <div class="card"><h2>Dst nT</h2><canvas class="chart" id="dstCanvas"></canvas><div class="muted">Last 2.5 hours</div></div>
     <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil"><div class="player"><button type="button" id="enlilPlay">Play</button><input id="enlilScrub" type="range" min="0" max="0" value="0"><span class="muted" id="enlilStamp"></span></div></div>
     <div class="card"><h2>Hobart BOM</h2><img id="hobart" alt="Hobart"></div>
     <div class="card"><h2>TGO Europe H</h2><img id="tgo" alt="TGO" referrerpolicy="no-referrer"></div>
@@ -137,9 +136,9 @@ function drawWindImf(){
   vBz.textContent=isFinite(lm.bz_gsm)?Number(lm.bz_gsm).toFixed(1)+" nT":"-";
 }
 function drawGoes(){chart(goesPlot,[{color:"#5eead4",y:sample(sliceHours(cache.goes),240).map(r=>Number(r.Hp))}],"Hp nT");const lastR=last(cache.goes);goesStatus.textContent="GOES-"+(lastR.satellite||"?")+" last 2.5h"}
-function drawDst(){chart(dstCanvas,[{color:"#93c5fd",y:sliceHours(cache.dst).map(r=>Number(r.dst))}]);const d=Number(last(cache.dst).dst);vDst.textContent=isFinite(d)?Math.round(d)+" nT":"-"}
+function drawDst(){const d=Number(last(cache.dst).dst);vDst.textContent=isFinite(d)?Math.round(d)+" nT":"-"}
 function drawHp30(){const d=Number(last(cache.hp30).hp30);vHp30.textContent=isFinite(d)?d.toFixed(1):"-"}
-function drawAll(){drawWindImf();drawGoes();drawDst()}
+function drawAll(){drawWindImf();drawGoes()}
 async function loadWindImf(){
   const [wind,mag]=await Promise.all([settled("https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json"),settled("https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json")]);
   if(wind) cache.wind=rtswActive(wind).filter(r=>isFinite(Number(r.proton_speed)));
@@ -173,12 +172,12 @@ async function loadWx(){
     }
     kpForecast.innerHTML=html+"</table>";
   }
-  if(Array.isArray(dst)){cache.dst=dst.slice().sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag));drawDst()}
+  if(Array.isArray(dst)){cache.dst=dst.slice();drawDst()}
   if(hemi){const lines=String(hemi).trim().split(/\n/).filter(l=>l&&!l.startsWith("#")).map(l=>l.trim().split(/\s+/)).filter(p=>p.length>=4);const last3=lines.slice(-3),cur=lines[lines.length-1]||[];const avg=i=>last3.length?last3.reduce((s,p)=>s+(+p[i]||0),0)/last3.length:NaN;vHemi.textContent=(cur[2]||"-")+" / "+(cur[3]||"-")+" GW";vHemiAvg.textContent=(isFinite(avg(2))?Math.round(avg(2)):"-")+" / "+(isFinite(avg(3))?Math.round(avg(3)):"-")+" GW"}
   const ok=[kp,sc,kf,dst,hemi].filter(Boolean).length;feedStatus.textContent=ok>=4?"live":ok?"partial":"DOWN";feedStatus.className=ok>=4?"ok":ok?"muted":"down";
 }
 async function loadGoes(){const j=await settled("https://services.swpc.noaa.gov/json/goes/primary/magnetometers-1-day.json");if(!j){goesStatus.textContent="GOES down";return}cache.goes=(Array.isArray(j)?j:[]).sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag));drawGoes()}
-async function loadHp30(){const txt=await settled("./hp30.txt")||await settled("https://kp.gfz.de/fileadmin/files_for_gfz_cms/Hp30_ap30_nowcast.txt");if(!txt){vHp30.textContent="-";return}const rows=[];String(txt).split(/\n/).forEach(line=>{if(!line||line.startsWith("#"))return;const p=line.trim().split(/\s+/);if(p.length<8)return;const hp=Number(p[7]);if(!isFinite(hp)||hp<0)return;const y=+p[0],mo=+p[1],d=+p[2],h=+p[3];rows.push({hp30:hp})});cache.hp30=rows;drawHp30()}
+async function loadHp30(){const txt=await settled("./hp30.txt")||await settled("https://kp.gfz.de/fileadmin/files_for_gfz_cms/Hp30_ap30_nowcast.txt");if(!txt){vHp30.textContent="-";return}const rows=[];String(txt).split(/\n/).forEach(line=>{if(!line||line.startsWith("#"))return;const p=line.trim().split(/\s+/);if(p.length<8)return;const hp=Number(p[7]);if(!isFinite(hp)||hp<0)return;rows.push({hp30:hp})});cache.hp30=rows;drawHp30()}
 function loadImgs(){hobart.src=bust("https://www.sws.bom.gov.au/Images/Geophysical/Latest%20Conditions/Magnetograms/Hobart.gif");tgo.src="https://flux.phys.uit.no/cgi-bin/mkstackplot.cgi?GifOnly&&comp=H&nor=&Sync=&t="+Date.now();[hobart,tgo].forEach(img=>{img.onerror=function(){img.style.display="none"}})}
 const BASE="https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/export?bbox=-180,-90,180,90&bboxSR=4326&imageSR=4326&size=1600,800&format=png&f=image";
 let baseImg=null,auroraData=null;
