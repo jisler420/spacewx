@@ -303,7 +303,12 @@ function show(n){if(!frames.length)return;fi=(n+frames.length)%frames.length;enl
 async function loadEnlil(){const html=await settled(ENLIL_DIR);frames=[...String(html||"").matchAll(/href="(enlil_[^"]+\.jpg)"/g)].map(m=>ENLIL_DIR+m[1]);frames=[...new Set(frames)].sort();if(!frames.length){enlil.src=bust(ENLIL_DIR+"latest.jpg");enlilStamp.textContent="latest";return}enlilScrub.max=frames.length-1;enlilScrub.oninput=function(){if(timer){clearInterval(timer);timer=null;enlilPlay.textContent="Play"}show(+enlilScrub.value)};enlilPlay.onclick=function(){if(timer){clearInterval(timer);timer=null;enlilPlay.textContent="Play"}else{enlilPlay.textContent="Pause";timer=setInterval(function(){show(fi+1)},180)}};show(0);enlilPlay.click()}
 function tick(){const n=new Date();utc.textContent="UTC "+n.toISOString().slice(11,19);railUtc.textContent=n.toISOString().slice(11,19)+" UTC";try{const loc=n.toLocaleTimeString("en-US",{timeZone:cfg.tz,hour12:false});local.textContent="Local "+loc;railLocal.textContent=loc+" "+(cfg.tz||"")}catch(e){}placeLabel.textContent=(cfg.place||"")+(cfg.zip?" "+cfg.zip:"")}
 tick();drawEarth();loadWx();loadWindImf();loadHp30();loadImgs();loadAurora();loadEnlil();
-setInterval(tick,1000);setInterval(drawEarth,60000);setInterval(loadWx,300000);setInterval(loadWindImf,60000);setInterval(loadHp30,300000);setInterval(loadImgs,360000);setInterval(loadAurora,300000);
+function refreshKpis(){loadWx();loadWindImf();loadHp30();loadAurora()}
+setInterval(tick,1000);
+setInterval(drawEarth,60000);
+setInterval(refreshKpis,60000);
+setInterval(loadImgs,360000);
+document.addEventListener("visibilitychange",function(){if(!document.hidden)refreshKpis()});
 window.addEventListener("resize",function(){drawEarth();drawAll()});
 </script>
 </body>
