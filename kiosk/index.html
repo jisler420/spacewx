@@ -147,10 +147,10 @@ function gFromKp(k){
   if(k<8.67)return "G4";
   return "G5";
 }
-function kpGCell(k){
+function kpGCell(k,scale){
   if(!isFinite(k)) return "—";
-  const g=gFromKp(k);
-  return "<span class=\"kp\">"+k.toFixed(1)+"</span>"+(g!=="G0"?"<span class=\"g "+g.toLowerCase()+"\">"+g+"</span>":"");
+  const g=scale&&String(scale).indexOf("G")===0&&scale!=="G0"?String(scale):gFromKp(k);
+  return "<span class=\"kp\">"+k.toFixed(1)+"</span>"+(g&&g!=="G0"?"<span class=\"g "+g.toLowerCase()+"\">"+g+"</span>":"");
 }
 const hemiSamples=[];
 function applyHemi(hemi){
@@ -182,7 +182,14 @@ function applyHemi(hemi){
 function renderKpForecast(kf){
   if(!Array.isArray(kf)||!kpForecast)return;
   const by={};
-  kf.forEach(r=>{const t=parseT(r.time_tag);if(!isFinite(t))return;const d=new Date(t);by[d.toISOString().slice(0,10)+"-"+d.getUTCHours()]={kp:r.kp??r.Kp,kind:r.observed||""}});
+  kf.forEach(r=>{
+    if(!r||typeof r!=="object")return;
+    const t=parseT(r.time_tag||r[0]);
+    if(!isFinite(t))return;
+    const d=new Date(t);
+    const kp=Number(r.kp??r.Kp??r[1]);
+    by[d.toISOString().slice(0,10)+"-"+d.getUTCHours()]={kp:kp,kind:r.observed||r[2]||"",scale:r.noaa_scale||""};
+  });
   const start=new Date();start.setUTCHours(0,0,0,0);
   const days=[];
   for(let i=0;i<3;i++){
@@ -198,14 +205,14 @@ function renderKpForecast(kf){
   days.forEach(function(d){html+="<th><span class=\"day\">"+d.wd+"</span><span class=\"md\">"+d.md+"</span></th>"});
   html+="</tr>";
   for(let h=0;h<24;h+=3){
-    html+="<tr><td>"+String(h).padStart(2,"0")+"–"+String(h+3).padStart(2,"0")+"</td>";
+    html+="<tr><td>"+String(h).padStart(2,"0")+"–"+String(h===21?0:h+3).padStart(2,"0")+"</td>";
     days.forEach(function(d){
       const s=by[d.date+"-"+h], kv=s&&isFinite(s.kp)?Number(s.kp):NaN;
       let cls="";
       if(isFinite(kv)) cls=kv>=7?"kp-7":kv>=5?"kp-5":kv>=4?"kp-4":"kp-g";
       if(s&&String(s.kind).toLowerCase().indexOf("pred")===0) cls+=" kp-pred";
       if(d.date===nowD&&h===nowH) cls+=" kp-now";
-      html+="<td class=\""+cls+"\">"+kpGCell(kv)+"</td>";
+      html+="<td class=\""+cls+"\">"+kpGCell(kv,s&&s.scale)+"</td>";
     });
     html+="</tr>";
   }
