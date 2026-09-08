@@ -185,7 +185,7 @@ function parseNoaa3DayText(txt){
   const issued=lines.find(function(l){return /:Issued:/i.test(l)});
   const ym=issued&&issued.match(/(\d{4})/);
   if(ym) year=Number(ym[1]);
-  const header=lines.find(function(l){return /Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/.test(l)&&/\d{2}/.test(l)&&!/Issued|greatest|Forecast/i.test(l)});
+  const header=lines.find(function(l){return [...l.matchAll(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})/g)].length>=3});
   if(!header)return [];
   const months={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
   const days=[];
@@ -370,14 +370,6 @@ async function loadWindImf(){
 }
 async function loadWx(){
   const [kp,sc,kf,dayTxt,dst,dstPred,hemi]=await Promise.all([
-    settled("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"),
-    settled("https://services.swpc.noaa.gov/products/noaa-scales.json"),
-    settled("https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"),
-    settled("https://services.swpc.noaa.gov/text/3-day-forecast.txt"),
-    settled("https://services.swpc.noaa.gov/products/kyoto-dst.json"),
-    settled("https://services.swpc.noaa.gov/json/geospace/geospace_dst_1_hour.json"),
-    settled("https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt")
-  ]);
     settled("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"),
     settled("https://services.swpc.noaa.gov/products/noaa-scales.json"),
     settled("https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json"),
