@@ -210,6 +210,12 @@ function parseHemiSeries(txt){
   });
   return out;
 }
+const HP_SCALES=[25,50,75,100,125,150,175,200,250];
+function hpScale(peak){
+  const p=Math.max(0,peak);
+  for(let i=0;i<HP_SCALES.length;i++) if(p<=HP_SCALES[i]) return HP_SCALES[i];
+  return 250;
+}
 function roundRect(ctx,x,y,w,h,r){
   const rr=Math.max(0,Math.min(r,Math.abs(w)/2,Math.abs(h)/2));
   ctx.beginPath();
@@ -227,24 +233,25 @@ function drawHemiPlot(){
   const now=Date.now(), t0=now-6*3600000;
   const lastF=hemiSeries.length?hemiSeries[hemiSeries.length-1].fcst:now;
   const t1=Math.max(now,lastF)+8*60000, span=t1-t0, xAt=function(t){return L+((t-t0)/span)*pw};
-  let mag=50;
-  hemiSeries.forEach(function(r){ if(r.fcst>=t0) mag=Math.max(mag,r.n,r.s); });
-  mag=Math.max(50, Math.ceil(mag/25)*25);
+  let peak=0;
+  hemiSeries.forEach(function(r){ if(r.fcst>=t0) peak=Math.max(peak,r.n,r.s); });
+  const mag=hpScale(peak);
   const y0=T+ph/2, yAt=function(v){return y0-(v/mag)*(ph/2)};
+  const ticks=mag<=25?[-mag,0,mag]:[-mag,-mag/2,0,mag/2,mag];
   ctx.save();
   roundRect(ctx,L,T,pw,ph,8); ctx.clip();
   ctx.fillStyle="#070b12"; ctx.fillRect(L,T,pw,ph);
-  ctx.strokeStyle="#1a2436"; ctx.lineWidth=1; ctx.fillStyle="#8b97b3"; ctx.font="10px Segoe UI,system-ui,sans-serif"; ctx.textAlign="right";
-  [-mag,-mag/2,0,mag/2,mag].forEach(function(v){
+  ctx.strokeStyle="#1e293b"; ctx.lineWidth=1;
+  ticks.forEach(function(v){
     const y=yAt(v);
     ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+pw,y); ctx.stroke();
   });
-  ctx.strokeStyle="#334155"; ctx.beginPath(); ctx.moveTo(L,y0); ctx.lineTo(L+pw,y0); ctx.stroke();
-  const barW=Math.max(2.2,(5*60000/span)*pw*0.62);
+  ctx.strokeStyle="#475569"; ctx.beginPath(); ctx.moveTo(L,y0); ctx.lineTo(L+pw,y0); ctx.stroke();
+  const slot=(5*60000/span)*pw, barW=Math.max(2,slot*0.88);
   hemiSeries.forEach(function(r){
     if(r.fcst<t0||r.fcst>t1)return;
     const x=xAt(r.fcst), future=r.fcst>now;
-    ctx.globalAlpha=future?0.55:1;
+    ctx.globalAlpha=future?0.85:1;
     const hn=Math.max(1,y0-yAt(r.n));
     ctx.fillStyle=hpBarColor(r.n);
     roundRect(ctx,x-barW/2,yAt(r.n),barW,hn,Math.min(2,barW/2)); ctx.fill();
@@ -259,8 +266,8 @@ function drawHemiPlot(){
   ctx.beginPath(); ctx.moveTo(nx,T); ctx.lineTo(nx,T+ph); ctx.stroke();
   ctx.restore();
   ctx.fillStyle="#8b97b3"; ctx.font="10px Segoe UI,system-ui,sans-serif"; ctx.textAlign="right";
-  [-mag,-mag/2,0,mag/2,mag].forEach(function(v){
-    ctx.fillText(String(Math.round(v)), L-6, yAt(v)+3);
+  ticks.forEach(function(v){
+    ctx.fillText(String(Math.round(Math.abs(v))), L-6, yAt(v)+3);
   });
   ctx.fillStyle="#64748b"; ctx.font="9px Segoe UI,system-ui,sans-serif"; ctx.textAlign="left";
   ctx.fillText("N", L+6, T+12); ctx.fillText("S", L+6, T+ph-6); ctx.fillText("GW", 6, T+10);
