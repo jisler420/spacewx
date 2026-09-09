@@ -8,32 +8,35 @@
 <style>
 :root{--bg:#070b12;--card:#121826;--line:#2a3650;--text:#eef3ff;--muted:#8b97b3;--acc:#5eead4;--ok:#34d399;--bad:#f87171;--rail:#0b1220}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Segoe UI,system-ui,sans-serif;overflow-x:hidden;-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Segoe UI,system-ui,sans-serif;overflow-x:hidden;-webkit-text-size-adjust:100%;touch-action:manipulation}
+img,canvas,svg,video{max-width:100%}
 a{color:var(--acc);text-decoration:none}
-header{display:flex;flex-wrap:wrap;gap:8px 12px;justify-content:space-between;align-items:center;padding:10px 14px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));background:var(--rail);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
+header{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:space-between;align-items:center;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));background:var(--rail);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
 .brand{font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
-.shell{max-width:1680px;margin:0 auto}
-.main{padding:12px 12px 40px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+.clocks{display:flex;flex-wrap:wrap;gap:6px 12px;color:var(--muted);font-size:13px;min-width:0}
+header nav{min-width:0;text-align:right}
+.shell{max-width:1680px;margin:0 auto;width:100%}
+.main{padding:12px 12px 40px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right));padding-bottom:max(28px,calc(16px + env(safe-area-inset-bottom)))}
 .kpis{display:grid;gap:8px;margin-bottom:12px}
 .kpis-4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .kpis-6{grid-template-columns:repeat(6,minmax(0,1fr))}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;overflow:hidden}
-.kpi b{display:block;font-size:22px;word-break:break-word}
+.kpi b{display:block;font-size:clamp(15px,2.4vw,22px);word-break:break-word;overflow-wrap:anywhere}
 .dstpair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
 .dstpair .lab{color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
-.dstpair b{font-size:22px;line-height:1.1}
+.dstpair b{font-size:clamp(15px,2.4vw,22px);line-height:1.1}
 .tone0{color:#eef3ff}.tone1{color:#f5d76e}.tone2{color:#f59e42}.tone3{color:#f05252}
 .kpi span{color:var(--muted);font-size:11px;text-transform:uppercase}
 .short{display:none}
-.maprow{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,32%);gap:12px;align-items:stretch;margin-bottom:12px}
-.mapbox{position:relative;width:100%;min-height:220px;aspect-ratio:2/1;border-radius:12px;border:1px solid var(--line);overflow:hidden;background:#000}
-.maprow .card{height:100%;min-height:220px;min-width:0}
+.maprow{display:grid;grid-template-columns:minmax(0,1fr) minmax(min(100%,240px),32%);gap:12px;align-items:stretch;margin-bottom:12px}
+.mapbox{position:relative;width:100%;min-height:180px;aspect-ratio:2/1;border-radius:12px;border:1px solid var(--line);overflow:hidden;background:#000}
+.maprow .card{height:100%;min-height:180px;min-width:0}
 #earth{position:absolute;inset:0;width:100%;height:100%;display:block}
 td.kp-now{outline:1px solid var(--acc);background:#102018}
 td.kp-g{color:#cbd5e1}td.kp-4{background:#3b2a10;color:#fde68a}td.kp-5{background:#431407;color:#fdba74}td.kp-7{background:#450a0a;color:#fecaca}
 td.kp-pred{opacity:.78}
-#kpForecast{overflow-x:auto;-webkit-overflow-scrolling:touch}
-#kpForecast table{width:100%;min-width:280px;border-collapse:collapse;font-variant-numeric:tabular-nums}
+#kpForecast{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+#kpForecast table{width:100%;min-width:260px;border-collapse:collapse;font-variant-numeric:tabular-nums}
 #kpForecast th{padding:4px 2px 8px;font-size:11px;font-weight:600;color:#8b97b3;text-align:center}
 #kpForecast th:first-child,#kpForecast td:first-child{text-align:left;color:#8b97b3;font-size:11px}
 #kpForecast td{padding:5px 2px;text-align:center;border-radius:6px;vertical-align:top}
@@ -44,12 +47,12 @@ td.kp-pred{opacity:.78}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
 .swrow{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0;align-items:stretch}
 .swrow .card{min-width:0;overflow:hidden;display:flex;flex-direction:column}
-#swPlot{width:100%;height:520px;display:block;border-radius:8px;background:#0b1220;max-width:100%}
-.hemiwrap{position:relative;flex:1;min-height:280px;background:#0b1220;border-radius:8px;overflow:hidden;border:1px solid #1a2436}
+#swPlot{width:100%;height:min(52vw,520px);min-height:240px;display:block;border-radius:8px;background:#0b1220;max-width:100%}
+.hemiwrap{position:relative;flex:1;min-height:220px;background:#0b1220;border-radius:8px;overflow:hidden;border:1px solid #1a2436}
 #hemiPlot{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hemicard h2{text-align:center;letter-spacing:.14em;font-weight:650;color:#d7deee}
 .hemilegs{display:grid;grid-template-columns:1fr;gap:0;margin-top:8px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.hemilegs .row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(7.2rem,auto) minmax(5.8rem,auto);gap:8px;align-items:center;background:#0b1220;padding:9px 10px;font-size:13px;color:#c5d0e6;border-top:1px solid var(--line)}
+.hemilegs .row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(6.4rem,auto) minmax(5.2rem,auto);gap:8px;align-items:center;background:#0b1220;padding:9px 10px;font-size:13px;color:#c5d0e6;border-top:1px solid var(--line)}
 .hemilegs .row:first-child{border-top:0}
 .hemilegs .head{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:7px 10px;white-space:normal;line-height:1.25}
 .hemilegs .head span:not(:first-child),.hemilegs .row b{justify-self:end;text-align:center}
@@ -63,10 +66,10 @@ a.imglink img{cursor:zoom-in}
 canvas.chart{height:210px;background:#0a0e18}
 .muted{color:var(--muted);font-size:12px}
 .kpi b.down,.muted.down,#kpForecast.down{color:var(--bad);font-size:13px;font-weight:700;letter-spacing:.02em;text-transform:none}
-.card img{max-height:min(70vh,560px);object-fit:contain;background:#000}
-.player{display:flex;gap:8px;align-items:center;margin-top:8px}
-.player button{background:#101827;color:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;min-height:40px}
-.player input{flex:1;min-width:0;height:32px}
+.card img{max-height:min(70vh,560px);width:100%;object-fit:contain;background:#000}
+.player{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.player button{background:#101827;color:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;min-height:40px;min-width:44px}
+.player input{flex:1;min-width:80px;height:32px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:6px 4px;border-bottom:1px solid #1d2738;text-align:center}
 th:first-child,td:first-child{text-align:left}
@@ -81,8 +84,7 @@ th:first-child,td:first-child{text-align:left}
 @media(max-width:980px){
   .cols{grid-template-columns:1fr 1fr}
   .kpis-4{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #swPlot{height:340px}
-  .kpi b,.dstpair b{font-size:18px}
+  #swPlot{height:340px;min-height:280px}
 }
 @media(max-width:720px){
   header{font-size:13px}
@@ -91,31 +93,37 @@ th:first-child,td:first-child{text-align:left}
   .kpis-6{grid-template-columns:repeat(2,minmax(0,1fr))}
   #kpForecast .kp{font-size:13px}
   #kpForecast .g{display:block;margin-left:0;margin-top:2px}
-  .main{padding:10px 10px 32px}
+  .main{padding:10px 10px 32px;padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
   .hemilegs .row,.hemilegs .head{grid-template-columns:1fr 1fr;gap:6px}
   .hemilegs .row span{grid-column:1/-1;font-size:12px}
   .hemilegs .head span:first-child{display:none}
   .hemilegs .head span,.hemilegs .row b{justify-self:stretch}
+  .mapbox{aspect-ratio:16/9;min-height:160px}
 }
 @media(max-width:560px){
-  .kpis-4{grid-template-columns:repeat(2,minmax(0,1fr))}
   .dstpair{grid-template-columns:1fr}
-  .player{flex-wrap:wrap}
-  .mapbox{min-height:180px}
-  #swPlot{height:300px}
-  .hemiwrap{min-height:200px}
-  header{row-gap:4px}
+  #swPlot{height:280px;min-height:220px}
+  .hemiwrap{min-height:180px}
+  header nav{flex-basis:100%;text-align:left}
 }
 @media(max-width:380px){
-  .kpis-4,.kpis-6{grid-template-columns:1fr}
+  .kpis-4{grid-template-columns:1fr}
+  .kpis-6{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .hpbadge{min-width:0;font-size:11px;padding:4px 6px}
+}
+@media(orientation:landscape) and (max-height:500px){
+  header{position:relative}
+  .mapbox{aspect-ratio:21/9;min-height:120px}
+  #swPlot{height:220px;min-height:180px}
+  .hemiwrap{min-height:140px}
+  .card img{max-height:50vh}
 }
 </style>
 </head>
 <body>
 <header>
   <div class="brand">SpaceWx</div>
-  <div class="muted" id="utc">UTC</div>
-  <div class="muted" id="local">Local</div>
+  <div class="clocks"><div id="utc">UTC</div><div id="local">Local</div></div>
   <nav><a href="index.html">Live</a> · <a href="settings.html">Settings</a> · <span id="feedStatus" class="muted">checking</span> <span id="imfStatus" class="muted"></span></nav>
 </header>
 <div class="shell">
@@ -275,7 +283,7 @@ function roundRect(ctx,x,y,w,h,r){
 }
 function drawHemiPlot(){
   const el=document.getElementById("hemiPlot"); if(!el)return;
-  const wrap=el.parentElement, cssW=Math.max(260,wrap.clientWidth||320), cssH=Math.max(200,wrap.clientHeight||360);
+  const wrap=el.parentElement, cssW=Math.max(1,wrap.clientWidth||320), cssH=Math.max(160,wrap.clientHeight||360);
   const dpr=Math.min(2,window.devicePixelRatio||1);
   el.width=Math.round(cssW*dpr); el.height=Math.round(cssH*dpr);
   const ctx=el.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -515,7 +523,7 @@ function imfPeak(t0,t1){
 function drawSw(){
   const el=document.getElementById("swPlot"); if(!el)return;
   const now=Date.now(),t0=now-36*3600000,t1=now+3600000;
-  const box=el.parentElement,cssW=Math.max(260,box.clientWidth||320),cssH=cssW<720?340:520,dpr=Math.min(2,window.devicePixelRatio||1);
+  const box=el.parentElement,cssW=Math.max(1,box.clientWidth||320),cssH=cssW<480?280:cssW<720?340:520,dpr=Math.min(2,window.devicePixelRatio||1);
   el.width=Math.round(cssW*dpr);el.height=Math.round(cssH*dpr);el.style.width="100%";el.style.height=cssH+"px";
   const ctx=el.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle="#0b1220";ctx.fillRect(0,0,cssW,cssH);
@@ -632,7 +640,7 @@ function ovationColor(p){if(p<8)return [0,0,0,0];const t=Math.min(1,(p-8)/70);if
 function paintOvation(coords){const gw=360,gh=181,grid=new Float32Array(gw*gh);for(let i=0;i<coords.length;i++){const p=coords[i];if(!p||p.length<3||p[2]<8||Math.abs(p[1])<22)continue;let lon=p[0];if(lon>180)lon-=360;const ix=Math.max(0,Math.min(gw-1,Math.round(((lon+180)/360)*(gw-1))));const iy=Math.max(0,Math.min(gh-1,Math.round(((90-p[1])/180)*(gh-1))));const j=iy*gw+ix;if(p[2]>grid[j])grid[j]=p[2]}const img=new ImageData(gw,gh);for(let i=0;i<grid.length;i++){const c=ovationColor(grid[i]),o=i*4;img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=c[3]}return img}
 function drawEarth(){
   const el=document.getElementById("earth"),box=el&&el.parentElement;if(!el||!box)return;
-  const w=Math.max(320,box.clientWidth),h=Math.max(160,box.clientHeight),dpr=Math.min(2,window.devicePixelRatio||1);
+  const w=Math.max(1,box.clientWidth||320),h=Math.max(1,box.clientHeight||160),dpr=Math.min(2,window.devicePixelRatio||1);
   el.width=Math.round(w*dpr);el.height=Math.round(h*dpr);el.style.width=w+"px";el.style.height=h+"px";
   const ctx=el.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle="#070b12";ctx.fillRect(0,0,w,h);
   if(baseImg&&baseImg.complete)ctx.drawImage(baseImg,0,0,w,h);
