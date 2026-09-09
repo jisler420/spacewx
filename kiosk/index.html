@@ -49,9 +49,9 @@ td.kp-pred{opacity:.78}
 #hemiPlot{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hemicard h2{text-align:center;letter-spacing:.14em;font-weight:650;color:#d7deee}
 .hemilegs{display:grid;grid-template-columns:1fr;gap:0;margin-top:8px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.hemilegs .row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(5.4rem,auto) minmax(5.8rem,auto);gap:8px;align-items:center;background:#0b1220;padding:9px 10px;font-size:13px;color:#c5d0e6;border-top:1px solid var(--line)}
+.hemilegs .row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(7.2rem,auto) minmax(5.8rem,auto);gap:8px;align-items:center;background:#0b1220;padding:9px 10px;font-size:13px;color:#c5d0e6;border-top:1px solid var(--line)}
 .hemilegs .row:first-child{border-top:0}
-.hemilegs .head{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:7px 10px}
+.hemilegs .head{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:7px 10px;white-space:normal;line-height:1.25}
 .hemilegs .head span:not(:first-child),.hemilegs .row b{justify-self:end;text-align:center}
 .hpbadge{display:inline-block;min-width:4.4rem;text-align:center;padding:4px 8px;border-radius:999px;font-weight:800;color:#070b12;background:#4ade80;font-variant-numeric:tabular-nums;font-size:12px}
 #hemiPlotNote{margin-top:8px;font-size:11px}
@@ -157,7 +157,7 @@ th:first-child,td:first-child{text-align:left}
         <h2>Hemispheric Power</h2>
         <div class="hemiwrap"><canvas id="hemiPlot"></canvas></div>
         <div class="hemilegs">
-          <div class="row head"><span></span><span>At Earth</span><span>At L1 Now</span></div>
+          <div class="row head"><span></span><span id="hemiEarthHdr">At Earth</span><span>At L1 Now</span></div>
           <div class="row"><span>Northern hemisphere</span><b id="hemiNEarth" class="hpbadge">-</b><b id="hemiNL1" class="hpbadge">-</b></div>
           <div class="row"><span>Southern hemisphere</span><b id="hemiSEarth" class="hpbadge">-</b><b id="hemiSL1" class="hpbadge">-</b></div>
         </div>
@@ -300,6 +300,11 @@ function drawHemiPlot(){
     ctx.beginPath(); ctx.moveTo(L,Math.round(yAt(v))+0.5); ctx.lineTo(L+pw,Math.round(yAt(v))+0.5); ctx.stroke();
   });
   const barW=pw/(1.5*nSlots-0.5), gap=barW*0.5;
+  function xEarth(t){
+    if(!latest) return L+pw;
+    const i=(nSlots-1)-((latest.fcst-t)/STEP);
+    return L+Math.max(-0.5,Math.min(nSlots-0.5,i))*(barW+gap)+barW/2;
+  }
   const bins=new Array(nSlots);
   if(!stale){
     hemiSeries.forEach(function(r){
@@ -318,7 +323,7 @@ function drawHemiPlot(){
     ctx.fillStyle=live?hpBarColor(s):BLUE;
     ctx.fillRect(x, Math.round(y0), barW, Math.max(1,Math.round(yAt(-s))-Math.round(y0)));
   }
-  const nx=Math.min(L+pw-1,Math.max(L,xAt(now)));
+  const nx=Math.min(L+pw-1,Math.max(L,xEarth(now)));
   ctx.fillStyle="rgba(238,243,255,0.04)"; ctx.fillRect(nx,T,L+pw-nx,ph);
   ctx.strokeStyle="#eef3ff"; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(Math.round(nx)+0.5,T); ctx.lineTo(Math.round(nx)+0.5,T+ph); ctx.stroke();
@@ -332,17 +337,22 @@ function drawHemiPlot(){
   ctx.textAlign="center"; ctx.fillStyle="#8b97b3"; ctx.font="10px Segoe UI,system-ui,sans-serif";
   ctx.fillText("Gigawatt", 0, 0);
   ctx.restore();
+  const earthLbl="At Earth ("+String(new Date(now).getUTCHours()).padStart(2,"0")+":"+String(new Date(now).getUTCMinutes()).padStart(2,"0")+" UTC)";
+  const hdr=document.getElementById("hemiEarthHdr"); if(hdr) hdr.textContent=earthLbl;
   ctx.save();
   ctx.translate(Math.round(nx)+8, T+8); ctx.rotate(Math.PI/2);
   ctx.fillStyle="#eef3ff"; ctx.font="700 10px Segoe UI,system-ui,sans-serif"; ctx.textAlign="left";
-  ctx.fillText("At Earth", 0, 0);
+  ctx.fillText(earthLbl, 0, 0);
   ctx.restore();
   ctx.fillStyle="#8b97b3"; ctx.font="10px Segoe UI,system-ui,sans-serif";
   const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const startH=new Date(t0); startH.setUTCMinutes(0,0,0); startH.setUTCHours(startH.getUTCHours()+1);
+  const startH=new Date(latest?latest.fcst-nSlots*STEP:now-nSlots*STEP); startH.setUTCMinutes(0,0,0);
+  startH.setUTCHours(startH.getUTCHours()+1);
   ctx.textAlign="center";
-  for(let t=startH.getTime(); t<=t1; t+=3600000){
-    const dt=new Date(t), x=xAt(t);
+  const tRight=latest?latest.fcst:now;
+  for(let t=startH.getTime(); t<=tRight; t+=3600000){
+    const dt=new Date(t), x=xEarth(t);
+    if(x<L-4||x>L+pw+4) continue;
     ctx.strokeStyle="#2a3650";
     ctx.beginPath(); ctx.moveTo(Math.round(x)+0.5,T+ph); ctx.lineTo(Math.round(x)+0.5,T+ph+4); ctx.stroke();
     const label=(dt.getUTCHours()===0)?(dt.getUTCDate()+" "+months[dt.getUTCMonth()]):(String(dt.getUTCHours()).padStart(2,"0")+":00");
