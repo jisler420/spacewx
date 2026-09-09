@@ -22,14 +22,14 @@ header nav{min-width:0;text-align:right}
 .kpis-4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .kpis-6{grid-template-columns:repeat(6,minmax(0,1fr))}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;overflow:hidden}
-.kpi b{display:block;font-size:clamp(15px,2.4vw,22px);word-break:break-word;overflow-wrap:anywhere}
+.kpi b{display:block;font-size:22px;word-break:break-word}
 .dstpair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
 .dstpair .lab{color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
-.dstpair b{font-size:clamp(15px,2.4vw,22px);line-height:1.1}
+.dstpair b{font-size:22px;line-height:1.1}
 .tone0{color:#eef3ff}.tone1{color:#f5d76e}.tone2{color:#f59e42}.tone3{color:#f05252}
 .kpi span{color:var(--muted);font-size:11px;text-transform:uppercase}
 .short{display:none}
-.maprow{display:grid;grid-template-columns:minmax(0,1fr) minmax(min(100%,240px),32%);gap:12px;align-items:stretch;margin-bottom:12px}
+.maprow{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,32%);gap:12px;align-items:stretch;margin-bottom:12px}
 .mapbox{position:relative;width:100%;min-height:180px;aspect-ratio:2/1;border-radius:12px;border:1px solid var(--line);overflow:hidden;background:#000}
 .maprow .card{height:100%;min-height:180px;min-width:0}
 #earth{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -48,7 +48,7 @@ td.kp-pred{opacity:.78}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
 .swrow{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0;align-items:stretch}
 .swrow .card{min-width:0;overflow:hidden;display:flex;flex-direction:column}
-#swPlot{width:100%;height:min(52vw,520px);min-height:240px;display:block;border-radius:8px;background:#0b1220;max-width:100%}
+#swPlot{width:100%;height:520px;display:block;border-radius:8px;background:#0b1220;max-width:100%}
 .hemiwrap{position:relative;flex:1;min-height:220px;background:#0b1220;border-radius:8px;overflow:hidden;border:1px solid #1a2436}
 #hemiPlot{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hemicard h2{text-align:center;letter-spacing:.14em;font-weight:650;color:#d7deee}
@@ -212,8 +212,36 @@ function applyHealth(h){
     else {swStatus.textContent=DOWN;swStatus.className="down"}
   }
 }
-async function grab(u){const r=await fetch(u,{cache:"no-cache"});if(!r.ok) throw new Error(String(r.status));const ct=r.headers.get("content-type")||"";return (ct.includes("json")||u.endsWith(".json"))?r.json():r.text()}
-async function settled(u){try{return await grab(u)}catch(e){return null}}
+async function grab(u){
+  const ac=new AbortController();
+  const t=setTimeout(function(){try{ac.abort()}catch(e){}},10000);
+  try{
+    const r=await fetch(u,{cache:"no-cache",mode:"cors",credentials:"omit",signal:ac.signal});
+    if(!r.ok) throw new Error(String(r.status));
+    const ct=r.headers.get("content-type")||"";
+    return (ct.includes("json")||/\.json(\?|$)/.test(u))?r.json():r.text();
+  }finally{clearTimeout(t)}
+}
+async function settled(u){
+  try{return await grab(u)}
+  catch(e){
+    const snap={
+      "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json":"./data/kp.json",
+      "https://services.swpc.noaa.gov/products/noaa-scales.json":"./data/scales.json",
+      "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json":"./data/kf.json",
+      "https://services.swpc.noaa.gov/text/3-day-forecast.txt":"./data/day.txt",
+      "https://services.swpc.noaa.gov/products/kyoto-dst.json":"./data/dst.json",
+      "https://services.swpc.noaa.gov/json/geospace/geospace_dst_1_hour.json":"./data/dstPred.json",
+      "https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt":"./data/hemi.txt",
+      "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json":"./data/aurora.json",
+      "https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json":"./data/rtsw_mag.json",
+      "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json":"./data/rtsw_wind.json",
+      "./hp30.txt":"./hp30.txt"
+    }[u];
+    if(snap && snap!==u){try{return await grab(snap)}catch(e2){}}
+    return null;
+  }
+}
 const last=a=>Array.isArray(a)&&a.length?a[a.length-1]:{};
 function magLat(lat,lon){
   const poleLat=80.8*Math.PI/180, poleLon=-72.6*Math.PI/180;
@@ -759,95 +787,32 @@ function applyWorkerData(data){
 }
 
 tick();drawEarth();loadImgs();loadEnlil();
-function workerSrc(){
-  const u=new URL(location.href);
-  let p=u.pathname||"/";
-  if(!p.endsWith("/")){
-    const last=p.split("/").pop()||"";
-    p=last.indexOf(".")>=0?p.slice(0,p.length-last.length):p+"/";
-  }
-  return u.origin+p+"spacewx-worker.js?v=20260909h4";
+function pullAll(){
+  loadWx();loadWindImf();loadHp30();loadAurora();
 }
-let wxWorker=null, workerOk=false, lastPulse=0, respawnTimer=null;
-function startFallback(){
-  try{loadWx()}catch(e){}
-  try{loadWindImf()}catch(e){}
-  try{loadHp30()}catch(e){}
-  try{loadAurora()}catch(e){}
-  if(window.__swFb) return;
+function startPolling(){
+  pullAll();
+  if(window.__swPoll) return;
+  window.__swPoll=true;
   const sec=[60,300].indexOf(+cfg.pollSec)>=0?+cfg.pollSec:60;
   const ms=sec*1000;
-  window.__swFb=true;
   setTimeout(function(){
-    refreshKpis("fast");
-    setInterval(function(){ if(!workerOk) refreshKpis("fast"); }, ms);
+    pullAll();
+    setInterval(pullAll,ms);
   }, Math.max(250, ms-(Date.now()%ms)));
 }
-function spawnWorker(){
-  try{ if(wxWorker) wxWorker.terminate(); }catch(e){}
-  wxWorker=null;
-  try{
-    wxWorker=new Worker(workerSrc()+"&r="+Date.now());
-    wxWorker.onmessage=function(e){
-      lastPulse=Date.now();
-      if(e.data&&(e.data.type==="hello"||e.data.type==="update")) workerOk=true;
-      if(e.data&&e.data.type==="update") applyWorkerData(e.data.data);
-      if(e.data&&e.data.type==="error"){
-        feedStatus.textContent="retrying";
-        feedStatus.className="muted";
-        if(!workerOk) startFallback();
-      }
-    };
-    wxWorker.onerror=function(){
-      workerOk=false;
-      try{wxWorker.terminate()}catch(e){}
-      wxWorker=null;
-      startFallback();
-      queueRespawn(8000);
-    };
-    wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||60,hidden:document.hidden});
-  }catch(e){
-    wxWorker=null; workerOk=false;
-    startFallback();
-    queueRespawn(8000);
-  }
-}
-function queueRespawn(ms){
-  if(respawnTimer) return;
-  respawnTimer=setTimeout(function(){ respawnTimer=null; spawnWorker(); }, ms||8000);
-}
-function refreshKpis(kind){
-  if(wxWorker){ try{ wxWorker.postMessage({type:"poll",kind:kind||"fast"}); return; }catch(e){ wxWorker=null; workerOk=false; } }
-  startFallback();
-}
-spawnWorker();
-startFallback();
-setInterval(function(){
-  const age=Date.now()-lastPulse;
-  if(age>25000){
-    workerOk=false;
-    feedStatus.textContent="recovering";
-    feedStatus.className="muted";
-    spawnWorker();
-    startFallback();
-  }
-}, 10000);
+startPolling();
 setInterval(tick,1000);
 setInterval(function(){ try{loadImgs()}catch(e){} try{loadEnlil()}catch(e){} try{drawEarth()}catch(e){} },300000);
 window.addEventListener("online", function(){
   feedStatus.textContent="reconnecting";
   feedStatus.className="muted";
-  spawnWorker();
-  startFallback();
+  pullAll();
   try{loadImgs()}catch(e){}
   try{loadEnlil()}catch(e){}
 });
 document.addEventListener("visibilitychange",function(){
-  if(wxWorker){try{wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||60,hidden:document.hidden})}catch(e){}}
-  if(!document.hidden){
-    if(!wxWorker || Date.now()-lastPulse>20000) spawnWorker();
-    refreshKpis("all");
-  }
+  if(!document.hidden) pullAll();
 });
 window.addEventListener("resize",function(){
   clearTimeout(window.__swResize);
