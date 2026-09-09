@@ -257,8 +257,6 @@ function magLat(lat,lon){
   const s=Math.sin(ph)*Math.sin(poleLat)+Math.cos(ph)*Math.cos(poleLat)*Math.cos(la-poleLon);
   return Math.asin(Math.max(-1,Math.min(1,s)))*180/Math.PI;
 }
-  return Math.asin(Math.max(-1,Math.min(1,s)))*180/Math.PI;
-}
 function auroraLevel(kind,n){
   if(!isFinite(n))return 0;
   if(kind==="g")return n<1?0:n<2?1:n<3?2:3;
