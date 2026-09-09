@@ -280,7 +280,7 @@ function drawHemiPlot(){
   el.width=Math.round(cssW*dpr); el.height=Math.round(cssH*dpr);
   const ctx=el.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle="#0b1220"; ctx.fillRect(0,0,cssW,cssH);
-  const L=50,R=10,T=10,B=24, pw=cssW-L-R, ph=cssH-T-B;
+  const L=50,R=10,T=22,B=24, pw=cssW-L-R, ph=cssH-T-B;
   const now=Date.now(), STEP=5*60000, nSlots=72, HOLD=17.5, BLUE="#38bdf8";
   const latest=hemiSeries.length?hemiSeries[hemiSeries.length-1]:null;
   const stale=!latest || (now-(latest.obs||latest.fcst)>15*60000);
@@ -339,11 +339,9 @@ function drawHemiPlot(){
   ctx.restore();
   const earthLbl="At Earth ("+String(new Date(now).getUTCHours()).padStart(2,"0")+":"+String(new Date(now).getUTCMinutes()).padStart(2,"0")+" UTC)";
   const hdr=document.getElementById("hemiEarthHdr"); if(hdr) hdr.textContent=earthLbl;
-  ctx.save();
-  ctx.translate(Math.round(nx)+8, T+8); ctx.rotate(Math.PI/2);
-  ctx.fillStyle="#eef3ff"; ctx.font="700 10px Segoe UI,system-ui,sans-serif"; ctx.textAlign="left";
-  ctx.fillText(earthLbl, 0, 0);
-  ctx.restore();
+  ctx.fillStyle="#eef3ff"; ctx.font="700 10px Segoe UI,system-ui,sans-serif";
+  ctx.textAlign=nx>L+pw-110?"right":"center";
+  ctx.fillText(earthLbl, nx, T-6);
   ctx.fillStyle="#8b97b3"; ctx.font="10px Segoe UI,system-ui,sans-serif";
   const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const startH=new Date(latest?latest.fcst-nSlots*STEP:now-nSlots*STEP); startH.setUTCMinutes(0,0,0);
