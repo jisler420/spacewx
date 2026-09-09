@@ -230,9 +230,10 @@ function drawHemiPlot(){
   const ctx=el.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle="#0b1220"; ctx.fillRect(0,0,cssW,cssH);
   const L=38,R=12,T=22,B=26, pw=cssW-L-R, ph=cssH-T-B;
-  const now=Date.now(), t0=now-6*3600000;
+  const now=Date.now();
   const lastF=hemiSeries.length?hemiSeries[hemiSeries.length-1].fcst:now;
-  const t1=Math.max(now,lastF)+8*60000, span=t1-t0, xAt=function(t){return L+((t-t0)/span)*pw};
+  const t1=Math.max(now,lastF);
+  const t0=t1-6*3600000, span=t1-t0, xAt=function(t){return L+((t-t0)/span)*pw};
   let peak=0;
   hemiSeries.forEach(function(r){ if(r.fcst>=t0) peak=Math.max(peak,r.n,r.s); });
   const mag=hpScale(peak);
@@ -247,7 +248,7 @@ function drawHemiPlot(){
     ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+pw,y); ctx.stroke();
   });
   ctx.strokeStyle="#475569"; ctx.beginPath(); ctx.moveTo(L,y0); ctx.lineTo(L+pw,y0); ctx.stroke();
-  const slot=(5*60000/span)*pw, barW=Math.max(2,slot*0.88);
+  const slot=(5*60000/span)*pw, barW=Math.max(1.5,slot*(2/3));
   hemiSeries.forEach(function(r){
     if(r.fcst<t0||r.fcst>t1)return;
     const x=xAt(r.fcst), future=r.fcst>now;
