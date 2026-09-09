@@ -177,7 +177,7 @@ th:first-child,td:first-child{text-align:left}
           <div class="row"><span>Northern hemisphere</span><b id="hemiNEarth" class="hpbadge">-</b><b id="hemiNL1" class="hpbadge">-</b></div>
           <div class="row"><span>Southern hemisphere</span><b id="hemiSEarth" class="hpbadge">-</b><b id="hemiSL1" class="hpbadge">-</b></div>
         </div>
-        <div class="muted" id="hemiPlotNote">Polled —</div>
+        <div class="muted" id="hemiPlotNote">Data —</div>
       </div>
       <div class="card"><h2>Solar Wind · KNMI HAPI</h2><canvas id="swPlot"></canvas><div class="muted" id="swStatus">last 36 hours + 1h pad · hourly</div></div>
     </div>
@@ -358,8 +358,9 @@ function drawHemiPlot(){
   }
   const note=document.getElementById("hemiPlotNote");
   if(note){
-    const poll=hemiPolledAt?"Polled "+utcHms(hemiPolledAt):"Polled —";
-    note.textContent=stale?(poll+" · feed down"):(poll+" · 6h · 5 min");
+    const dataT=latest&&isFinite(latest.obs)?utcHms(latest.obs):"";
+    const stamp=dataT?("Data "+dataT):"Data —";
+    note.textContent=stale?(stamp+" · feed down"):(stamp+" · 6h · 5 min");
     note.className=stale?"down":"muted";
   }
   const earth=stale?null:earthRow;
