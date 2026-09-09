@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "20 * * * *"
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,19 +22,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Stage kiosk as site root
         run: |
-          mkdir -p _site/data
-          cp -a kiosk/. _site/
-          curl -fsSL "https://kp.gfz.de/fileadmin/files_for_gfz_cms/Hp30_ap30_nowcast.txt" -o _site/hp30.txt || true
-          curl -fsSL "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json" -o _site/data/kp.json || true
-          curl -fsSL "https://services.swpc.noaa.gov/products/noaa-scales.json" -o _site/data/scales.json || true
-          curl -fsSL "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json" -o _site/data/kf.json || true
-          curl -fsSL "https://services.swpc.noaa.gov/text/3-day-forecast.txt" -o _site/data/day.txt || true
-          curl -fsSL "https://services.swpc.noaa.gov/products/kyoto-dst.json" -o _site/data/dst.json || true
-          curl -fsSL "https://services.swpc.noaa.gov/json/geospace/geospace_dst_1_hour.json" -o _site/data/dstPred.json || true
-          curl -fsSL "https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt" -o _site/data/hemi.txt || true
-          curl -fsSL "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json" -o _site/data/aurora.json || true
-          curl -fsSL "https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json" -o _site/data/rtsw_mag.json || true
-          curl -fsSL "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json" -o _site/data/rtsw_wind.json || true
+          mkdir -p _site
+          cp kiosk/* _site/
+          curl -fsSL https://kp.gfz.de/fileadmin/files_for_gfz_cms/Hp30_ap30_nowcast.txt -o _site/hp30.txt || true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

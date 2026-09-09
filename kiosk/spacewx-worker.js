@@ -9,8 +9,6 @@ const NOAA = {
   dstPred: "https://services.swpc.noaa.gov/json/geospace/geospace_dst_1_hour.json",
   hemi: "https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt",
   aurora: "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json",
-  rtswMag: "https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json",
-  rtswWind: "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json",
 };
 
 const etag = Object.create(null);
@@ -76,41 +74,38 @@ function hapiStart(arr) {
 }
 
 function mixSignal(outer) {
-  const ac = new AbortController();
-  setTimeout(function () { try { ac.abort(); } catch (e) {} }, 12000);
   try {
-    if (outer && typeof AbortSignal.any === "function") return AbortSignal.any([outer, ac.signal]);
-  } catch (e) {}
-  return ac.signal;
+    const t = AbortSignal.timeout(12000);
+    if (!outer) return t;
+    if (typeof AbortSignal.any === "function") return AbortSignal.any([outer, t]);
+    return outer;
+  } catch (e) {
+    return outer || undefined;
+  }
 }
 
 async function grab(u, signal) {
-  try {
-    const headers = {};
-    if (etag[u]) headers["If-None-Match"] = etag[u];
-    if (lastMod[u]) headers["If-Modified-Since"] = lastMod[u];
-    const r = await fetch(u, { cache: "no-cache", headers: headers, signal: mixSignal(signal) });
-    if (r.status === 304 && bodyCache[u] !== undefined) return { data: bodyCache[u], cached: true };
-    if (!r.ok) throw new Error(String(r.status));
-    const e = r.headers.get("etag");
-    const m = r.headers.get("last-modified");
-    if (e) etag[u] = e;
-    if (m) lastMod[u] = m;
-    const ct = r.headers.get("content-type") || "";
-    const data = ct.includes("json") || u.endsWith(".json") ? await r.json() : await r.text();
-    bodyCache[u] = data;
-    return { data: data, cached: false };
-  } catch (err) {
-    delete etag[u];
-    delete lastMod[u];
-    throw err;
-  }
+  const headers = {};
+  if (etag[u]) headers["If-None-Match"] = etag[u];
+  if (lastMod[u]) headers["If-Modified-Since"] = lastMod[u];
+  const r = await fetch(u, { cache: "no-cache", headers: headers, signal: mixSignal(signal) });
+  if (r.status === 304 && bodyCache[u] !== undefined) return { data: bodyCache[u], cached: true };
+  if (!r.ok) throw new Error(String(r.status));
+  const e = r.headers.get("etag");
+  const m = r.headers.get("last-modified");
+  if (e) etag[u] = e;
+  if (m) lastMod[u] = m;
+  const ct = r.headers.get("content-type") || "";
+  const data = ct.includes("json") || u.endsWith(".json") ? await r.json() : await r.text();
+  bodyCache[u] = data;
+  return { data: data, cached: false };
 }
 
 async function settled(u, signal) {
   try {
     return await grab(u, signal);
   } catch (e) {
+    if (e && (e.name === "AbortError" || e.name === "TimeoutError")) throw e;
     return null;
   }
 }
@@ -121,43 +116,6 @@ async function hapi(id, params, start, stop, signal) {
   if (!got || got.data == null) return [];
   const txt = typeof got.data === "string" ? got.data : String(got.data);
   return parseHapiCsv(txt, params.split(","));
-}
-
-function fromRtswMag(arr) {
-  const cut = Date.now() - 36 * 3600000;
-  return (arr || []).filter(function (r) { return r && r.active !== false; }).map(function (r) {
-    return {
-      t: parseT(r.time_tag),
-      bt: Number(r.bt),
-      bx_gsm: Number(r.bx_gsm),
-      by_gsm: Number(r.by_gsm),
-      bz_gsm: Number(r.bz_gsm),
-    };
-  }).filter(function (r) { return Number.isFinite(r.t) && r.t >= cut; });
-}
-
-function fromRtswWind(arr) {
-  const cut = Date.now() - 36 * 3600000;
-  return (arr || []).filter(function (r) { return r && r.active !== false; }).map(function (r) {
-    return {
-      t: parseT(r.time_tag),
-      density: Number(r.proton_density),
-      speed: Number(r.proton_speed),
-      temperature: Number(r.proton_temperature),
-    };
-  }).filter(function (r) { return Number.isFinite(r.t) && r.t >= cut; });
-}
-
-const src = { mag: "", plasma: "", hp: "", dst: "", kp: "" };
-
-function putSeries(out, key, arr) {
-  if (!arr) return false;
-  const last = arr.length ? arr[arr.length - 1] : null;
-  const fp = arr.length + ":" + (last && last.t);
-  if (printCache[key] === fp) return false;
-  printCache[key] = fp;
-  out[key] = arr;
-  return true;
 }
 
 function putIfChanged(out, key, value) {
@@ -178,7 +136,7 @@ async function collect(kind, signal) {
   const wantSlow = kind === "slow" || kind === "all";
 
   if (wantFast) {
-    const [mag, plasma, dstGot, hemi] = await Promise.all([
+    const [mag, plasma, dst, hemi] = await Promise.all([
       hapi("solar_wind_mag_rt", "bt,bx_gsm,by_gsm,bz_gsm", hapiStart(series.mag), stop, signal),
       hapi("solar_wind_plasma_rt", "density,speed,temperature", hapiStart(series.plasma), stop, signal),
       settled(NOAA.dst, signal),
@@ -186,38 +144,14 @@ async function collect(kind, signal) {
     ]);
     series.mag = mergeRows(series.mag, mag);
     series.plasma = mergeRows(series.plasma, plasma);
-    let dst = dstGot;
-    if (!series.mag.length) {
-      const fb = await settled(NOAA.rtswMag, signal);
-      if (fb && fb.data) {
-        series.mag = fromRtswMag(fb.data);
-        src.mag = series.mag.length ? "NOAA RTSW" : "";
-      }
-    } else src.mag = "KNMI";
-    if (!series.plasma.length) {
-      const fb = await settled(NOAA.rtswWind, signal);
-      if (fb && fb.data) {
-        series.plasma = fromRtswWind(fb.data);
-        src.plasma = series.plasma.length ? "NOAA RTSW" : "";
-      }
-    } else src.plasma = "KNMI";
-    if (!dst || !dst.data) {
-      const fb = await settled("https://iswa.gsfc.nasa.gov/IswaSystemWebApp/hapi/data?id=dst_quicklook&parameters=Dst&time.min=" + isoH(new Date(Date.now() - 48 * 3600000)) + "&time.max=" + stop + "&format=csv", signal);
-      if (fb && fb.data) {
-        const rows = parseHapiCsv(typeof fb.data === "string" ? fb.data : String(fb.data), ["Dst"]).map(function (r) {
-          return { time_tag: new Date(r.t).toISOString(), dst: r.Dst };
-        });
-        if (rows.length) { dst = { data: rows }; src.dst = "ISWA"; }
-      }
-    } else src.dst = "Kyoto";
-    if (putSeries(out, "mag", series.mag)) changed = true;
-    if (putSeries(out, "plasma", series.plasma)) changed = true;
+    if (putIfChanged(out, "mag", series.mag)) changed = true;
+    if (putIfChanged(out, "plasma", series.plasma)) changed = true;
     if (dst && putIfChanged(out, "dst", dst.data)) changed = true;
     if (hemi && putIfChanged(out, "hemi", hemi.data)) changed = true;
   }
 
   if (wantSlow) {
-    const [enlil, hp, kpGot, sc, kf, dayTxt, dstPred, aurora, hp30txt] = await Promise.all([
+    const [enlil, hp, kp, sc, kf, dayTxt, dstPred, aurora, hp30txt] = await Promise.all([
       hapi("solar_wind_plasma_enlil_metoffice", "density,speed,bt", hapiStart(series.enlil), stop, signal),
       hapi("hp30_index", "Hp30", hapiStart(series.hp), stop, signal),
       settled(NOAA.kp, signal),
@@ -230,17 +164,8 @@ async function collect(kind, signal) {
     ]);
     series.enlil = mergeRows(series.enlil, enlil);
     series.hp = mergeRows(series.hp, hp);
-    src.hp = series.hp.length ? "KNMI" : (hp30txt && hp30txt.data ? "GFZ" : "");
-    let kp = kpGot;
-    if (!kp || !kp.data) {
-      const knmiKp = await hapi("kp_index", "Kp", isoH(new Date(Date.now() - 3 * 86400000)), stop, signal);
-      if (knmiKp.length) {
-        kp = { data: knmiKp.map(function (r) { return { time_tag: new Date(r.t).toISOString(), Kp: r.Kp }; }) };
-        src.kp = "KNMI";
-      }
-    } else src.kp = "NOAA";
-    if (putSeries(out, "enlil", series.enlil)) changed = true;
-    if (putSeries(out, "hp", series.hp)) changed = true;
+    if (putIfChanged(out, "enlil", series.enlil)) changed = true;
+    if (putIfChanged(out, "hp", series.hp)) changed = true;
     if (kp && putIfChanged(out, "kp", kp.data)) changed = true;
     if (sc && putIfChanged(out, "sc", sc.data)) changed = true;
     if (kf && putIfChanged(out, "kf", kf.data)) changed = true;
@@ -259,23 +184,6 @@ async function collect(kind, signal) {
   }
 
   out.changed = changed;
-  out.health = {
-    mag: series.mag.length > 0,
-    plasma: series.plasma.length > 0,
-    dst: !!(bodyCache[NOAA.dst] || src.dst),
-    dstPred: !!bodyCache[NOAA.dstPred],
-    hemi: !!bodyCache[NOAA.hemi],
-    hp: series.hp.length > 0 || !!bodyCache["./hp30.txt"],
-    kp: !!(bodyCache[NOAA.kp] || src.kp),
-    scales: !!bodyCache[NOAA.scales],
-    forecast: !!(bodyCache[NOAA.kf] || bodyCache[NOAA.day]),
-    aurora: !!printCache.aurora || !!bodyCache[NOAA.aurora],
-    magSrc: src.mag,
-    plasmaSrc: src.plasma,
-    hpSrc: src.hp,
-    dstSrc: src.dst,
-    kpSrc: src.kp
-  };
   return out;
 }
 
@@ -286,16 +194,21 @@ async function loop(kind) {
   const keys = kind === "all" ? ["fast", "slow"] : [kind];
   if (kind !== "all" && running[kind]) return;
   const ac = new AbortController();
-  keys.forEach(function (k) { running[k] = ac; });
+  keys.forEach(function (k) {
+    if (running[k] && running[k] !== ac) {
+      try { running[k].abort(); } catch (e) {}
+    }
+    running[k] = ac;
+  });
   try {
     const data = await collect(kind, ac.signal);
     if (ac.signal.aborted) return;
     fails = 0;
     postMessage({ type: "update", data: data });
   } catch (e) {
+    if (e && (e.name === "AbortError" || e.name === "TimeoutError")) return;
     fails = Math.min(fails + 1, 6);
     postMessage({ type: "error", error: String(e && e.message ? e.message : e), fails: fails });
-    setTimeout(function () { loop(kind); }, Math.min(30000, 1500 * fails));
   } finally {
     keys.forEach(function (k) { if (running[k] === ac) running[k] = null; });
   }
@@ -344,4 +257,3 @@ onmessage = function (e) {
 
 loop("all");
 arm();
-postMessage({ type: "hello" });

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SpaceWx Settings</title>
-<style>html,body{margin:0;background:#07090f;color:#e8eefc;font:16px/1.4 Segoe UI,system-ui,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden;touch-action:manipulation}main{max-width:520px;width:100%;margin:24px auto;padding:16px;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-bottom:max(24px,env(safe-area-inset-bottom))}label,select{display:block;margin:12px 0 4px;color:#8b97b8}input,select{width:100%;max-width:100%;padding:12px;border-radius:8px;border:1px solid #2a3558;background:#101526;color:#e8eefc;box-sizing:border-box;font-size:16px}button,a{display:inline-block;margin:16px 8px 0 0;padding:12px 16px;border-radius:8px;border:0;background:#5eead4;color:#07090f;text-decoration:none;cursor:pointer;min-height:44px}a{background:#1a2140;color:#e8eefc}.muted{color:#8b97b8;font-size:13px}@media(max-width:420px){h1{font-size:22px}}</style>
+<style>html,body{margin:0;background:#07090f;color:#e8eefc;font:16px/1.4 Segoe UI,system-ui,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}main{max-width:520px;margin:24px auto;padding:16px;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}label,select{display:block;margin:12px 0 4px;color:#8b97b8}input,select{width:100%;padding:12px;border-radius:8px;border:1px solid #2a3558;background:#101526;color:#e8eefc;box-sizing:border-box;font-size:16px}button,a{display:inline-block;margin:16px 8px 0 0;padding:12px 16px;border-radius:8px;border:0;background:#5eead4;color:#07090f;text-decoration:none;cursor:pointer;min-height:44px}a{background:#1a2140;color:#e8eefc}.muted{color:#8b97b8;font-size:13px}</style>
 </head>
 <body><main>
 <h1>Settings</h1>
@@ -14,16 +14,16 @@
 <input id="coords" placeholder="63.27375, 18.61269">
 <label>Data poll interval</label>
 <select id="poll">
-  <option value="60">60 seconds (every minute :00)</option>
+  <option value="30">30 seconds (:00 and :30)</option>
   <option value="300">300 seconds (every 5 minutes)</option>
 </select>
-<p class="muted">Aligned to UTC. 60s = :00 · 300s = :00, :05, :10…</p>
+<p class="muted">Aligned to UTC. 30s = :00 and :30 · 300s = :00, :05, :10…</p>
 <div id="msg" class="muted"></div>
 <button id="save">Save</button>
 <a href="index.html">Back to live</a>
 </main>
 <script>
-const DEFAULT={zip:"",lat:30.02449,lon:-97.9072,place:"30.02449, -97.90720",tz:"America/Chicago",pollSec:60};
+const DEFAULT={zip:"",lat:30.02449,lon:-97.9072,place:"30.02449, -97.90720",tz:"America/Chicago",pollSec:30};
 function tzFrom(lon){
   if(lon<=-155)return "Pacific/Honolulu";
   if(lon<=-130)return "America/Anchorage";
@@ -40,8 +40,8 @@ function load(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getI
 const cur=load();
 zip.value=cur.zip||"";
 coords.value=cur.zip?"":(Number(cur.lat).toFixed(5)+", "+Number(cur.lon).toFixed(5));
-poll.value=String([60,300].indexOf(+cur.pollSec)>=0?cur.pollSec:60);
-function pollSec(){const n=+poll.value;return [60,300].indexOf(n)>=0?n:60}
+poll.value=String([30,300].indexOf(+cur.pollSec)>=0?cur.pollSec:30);
+function pollSec(){const n=+poll.value;return [30,300].indexOf(n)>=0?n:30}
 save.onclick=async()=>{
   const raw=(coords.value||"").trim();
   if(raw){
