@@ -58,6 +58,8 @@ td.kp-pred{opacity:.78}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0;overflow:hidden}
 .card h2{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .card img,canvas.chart{width:100%;max-width:100%;height:auto;display:block;border-radius:8px;background:#000}
+a.imglink{display:block;cursor:zoom-in}
+a.imglink img{cursor:zoom-in}
 canvas.chart{height:210px;background:#0a0e18}
 .muted{color:var(--muted);font-size:12px}
 .ok{color:var(--ok)}.down{color:var(--bad)}
@@ -155,9 +157,9 @@ th:first-child,td:first-child{text-align:left}
       <div class="card"><h2>Solar Wind · KNMI HAPI</h2><canvas id="swPlot"></canvas><div class="muted" id="swStatus">last 36 hours + 1h pad · hourly</div></div>
     </div>
     <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil"><div class="player"><button type="button" id="enlilPlay">Play</button><input id="enlilScrub" type="range" min="0" max="0" value="0"><span class="muted" id="enlilStamp"></span></div></div>
-    <div class="card"><h2>WAM-IPE · TEC nowcast</h2><img id="wamIpe" alt="WAM-IPE"><div class="muted">NOAA WAM-IPE · NCEP NOMADS</div></div>
-    <div class="card"><h2>Hobart BOM</h2><img id="hobart" alt="Hobart"></div>
-    <div class="card"><h2>TGO Europe H</h2><img id="tgo" alt="TGO" referrerpolicy="no-referrer"></div>
+    <div class="card"><h2>WAM-IPE · TEC nowcast</h2><a class="imglink" id="wamIpeA" target="_blank" rel="noopener noreferrer"><img id="wamIpe" alt="WAM-IPE"></a><div class="muted">NOAA WAM-IPE · NCEP NOMADS</div></div>
+    <div class="card"><h2>Hobart BOM</h2><a class="imglink" id="hobartA" target="_blank" rel="noopener noreferrer"><img id="hobart" alt="Hobart"></a></div>
+    <div class="card"><h2>TGO Europe H</h2><a class="imglink" id="tgoA" target="_blank" rel="noopener noreferrer"><img id="tgo" alt="TGO" referrerpolicy="no-referrer"></a></div>
   </div>
 </main>
 </div>
@@ -561,7 +563,15 @@ async function loadHp30(){
   const rows=[];String(txt).split(/\n/).forEach(line=>{if(!line||line.startsWith("#"))return;const p=line.trim().split(/\s+/);if(p.length<8)return;const hp=Number(p[7]);if(!isFinite(hp)||hp<0)return;const y=+p[0],mo=+p[1],d=+p[2],h=+p[3];rows.push({time_tag:new Date(Date.UTC(y,mo-1,d,Math.floor(h),Math.round((h%1)*60))).toISOString(),hp30:hp})});
   if(rows.length){cache.hp30=rows;drawHp30()}
 }
-function loadImgs(){hobart.src=bust("https://www.sws.bom.gov.au/Images/Geophysical/Latest%20Conditions/Magnetograms/Hobart.gif");tgo.src="https://flux.phys.uit.no/cgi-bin/mkstackplot.cgi?GifOnly&&comp=H&nor=&Sync=&t="+Date.now();if(wamIpe)wamIpe.src=bust("https://services.swpc.noaa.gov/images/animations/wam-ipe/wrs_ionosphere/latest.png");[hobart,tgo,wamIpe].forEach(img=>{if(img)img.onerror=function(){img.style.display="none"}})}
+function loadImgs(){
+  const H="https://www.sws.bom.gov.au/Images/Geophysical/Latest%20Conditions/Magnetograms/Hobart.gif";
+  const T="https://flux.phys.uit.no/cgi-bin/mkstackplot.cgi?GifOnly&&comp=H&nor=&Sync=&t="+Date.now();
+  const W="https://services.swpc.noaa.gov/images/animations/wam-ipe/wrs_ionosphere/latest.png";
+  hobart.src=bust(H); if(hobartA) hobartA.href=H;
+  tgo.src=T; if(tgoA) tgoA.href=T;
+  if(wamIpe){wamIpe.src=bust(W); if(wamIpeA) wamIpeA.href=W}
+  [hobart,tgo,wamIpe].forEach(img=>{if(img)img.onerror=function(){img.style.display="none"}});
+}
 
 const BASE="https://server.arcgisonline.com/arcgis/rest/services/Canvas/World_Dark_Gray_Base/MapServer/export?bbox=-180,-85,180,85&bboxSR=4326&imageSR=4326&size=1600,756&format=png&f=image";
 let baseImg=null,auroraData=null;
