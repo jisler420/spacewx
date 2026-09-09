@@ -16,7 +16,6 @@ header{display:flex;flex-wrap:wrap;gap:8px 12px;justify-content:space-between;al
 .main{padding:12px 12px 40px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
 .kpis{display:grid;gap:8px;margin-bottom:12px}
 .kpis-4{grid-template-columns:repeat(4,minmax(0,1fr))}
-.kpis-2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .kpis-6{grid-template-columns:repeat(6,minmax(0,1fr))}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;overflow:hidden}
 .kpi b{display:block;font-size:22px;word-break:break-word}
@@ -50,13 +49,15 @@ td.kp-pred{opacity:.78}
 #hemiPlot{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hemicard h2{text-align:center;letter-spacing:.14em;font-weight:650;color:#d7deee}
 .hemilegs{display:grid;grid-template-columns:1fr;gap:0;margin-top:8px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.hemilegs div{display:flex;justify-content:space-between;align-items:center;background:#0b1220;border:0;border-top:1px solid var(--line);border-radius:0;padding:10px 12px;font-size:13px;color:#c5d0e6}
-.hemilegs div:first-child{border-top:0}
-.hpbadge{display:inline-block;min-width:4.6rem;text-align:center;padding:4px 12px;border-radius:999px;font-weight:800;color:#070b12;background:#4ade80;font-variant-numeric:tabular-nums;font-size:12px}
+.hemilegs .row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(5.4rem,auto) minmax(5.8rem,auto);gap:8px;align-items:center;background:#0b1220;padding:9px 10px;font-size:13px;color:#c5d0e6;border-top:1px solid var(--line)}
+.hemilegs .row:first-child{border-top:0}
+.hemilegs .head{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:7px 10px}
+.hemilegs .head span:not(:first-child),.hemilegs .row b{justify-self:end;text-align:center}
+.hpbadge{display:inline-block;min-width:4.4rem;text-align:center;padding:4px 8px;border-radius:999px;font-weight:800;color:#070b12;background:#4ade80;font-variant-numeric:tabular-nums;font-size:12px}
 #hemiPlotNote{margin-top:8px;font-size:11px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0;overflow:hidden}
 .card h2{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
-.card img,canvas.chart{width:100%;max-width:100%;display:block;border-radius:8px;background:#000}
+.card img,canvas.chart{width:100%;max-width:100%;height:auto;display:block;border-radius:8px;background:#000}
 canvas.chart{height:210px;background:#0a0e18}
 .muted{color:var(--muted);font-size:12px}
 .ok{color:var(--ok)}.down{color:var(--bad)}
@@ -66,21 +67,36 @@ canvas.chart{height:210px;background:#0a0e18}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:6px 4px;border-bottom:1px solid #1d2738;text-align:center}
 th:first-child,td:first-child{text-align:left}
-@media(max-width:980px){
-  .cols{grid-template-columns:1fr}
-  .maprow{grid-template-columns:1fr}
-  .kpis-4,.kpis-6{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #swPlot{height:340px}
-  .hemiwrap{min-height:220px}
+@media(max-width:1200px){
+  .kpis-6{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:1100px){
   .swrow{grid-template-columns:1fr}
+  .maprow{grid-template-columns:1fr}
+  .hemiwrap{min-height:240px}
+}
+@media(max-width:980px){
+  .cols{grid-template-columns:1fr 1fr}
+  .kpis-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #swPlot{height:340px}
   .kpi b,.dstpair b{font-size:18px}
 }
 @media(max-width:720px){
   header{font-size:13px}
   .long{display:none}.short{display:inline}
+  .cols{grid-template-columns:1fr}
+  .kpis-6{grid-template-columns:repeat(2,minmax(0,1fr))}
   #kpForecast .kp{font-size:13px}
   #kpForecast .g{display:block;margin-left:0;margin-top:2px}
   .main{padding:10px 10px 32px}
+  .hemilegs .row,.hemilegs .head{grid-template-columns:1fr 1fr;gap:6px}
+  .hemilegs .row span{grid-column:1/-1;font-size:12px}
+  .hemilegs .head span:first-child{display:none}
+  .hemilegs .head span,.hemilegs .row b{justify-self:stretch}
+}
+@media(max-width:420px){
+  .kpis-4{grid-template-columns:1fr}
+  .kpi b,.dstpair b{font-size:20px}
 }
 </style>
 </head>
@@ -104,10 +120,6 @@ th:first-child,td:first-child{text-align:left}
         <div><div class="lab">Pred · Geospace</div><b id="vDstPred">-</b></div>
       </div>
     </div>
-  </div>
-  <div class="kpis kpis-2">
-    <div class="kpi"><span>Hemispheric power now N/S</span><b id="vHemi">-</b></div>
-    <div class="kpi"><span>15-min average N/S</span><b id="vHemiAvg">-</b><div class="muted" id="hemiAvgNote">poll average</div></div>
   </div>
   <div class="kpis kpis-6">
     <div class="kpi"><span>Hp30</span><b id="vHp30">-</b></div>
@@ -134,8 +146,9 @@ th:first-child,td:first-child{text-align:left}
         <h2>Hemispheric Power</h2>
         <div class="hemiwrap"><canvas id="hemiPlot"></canvas></div>
         <div class="hemilegs">
-          <div>Northern hemisphere <b id="hemiN" class="hpbadge">-</b></div>
-          <div>Southern hemisphere <b id="hemiS" class="hpbadge">-</b></div>
+          <div class="row head"><span></span><span>At Earth</span><span>At L1 Now</span></div>
+          <div class="row"><span>Northern hemisphere</span><b id="hemiNEarth" class="hpbadge">-</b><b id="hemiNL1" class="hpbadge">-</b></div>
+          <div class="row"><span>Southern hemisphere</span><b id="hemiSEarth" class="hpbadge">-</b><b id="hemiSL1" class="hpbadge">-</b></div>
         </div>
         <div class="muted" id="hemiPlotNote">6 hours · 5-minute averages · latest on the right</div>
       </div>
@@ -191,7 +204,6 @@ function kpGCell(k,scale){
   const g=scale&&String(scale).indexOf("G")===0&&scale!=="G0"?String(scale):gFromKp(k);
   return "<span class=\"kp\">"+k.toFixed(1)+"</span>"+(g&&g!=="G0"?"<span class=\"g "+g.toLowerCase()+"\">"+g+"</span>":"");
 }
-const hemiSamples=[];
 let hemiSeries=[];
 function hpBarColor(v){
   const a=Math.abs(v);
@@ -251,10 +263,7 @@ function drawHemiPlot(){
     ctx.strokeStyle=v===0?"#3d4d66":"#172033";
     ctx.beginPath(); ctx.moveTo(L,Math.round(yAt(v))+0.5); ctx.lineTo(L+pw,Math.round(yAt(v))+0.5); ctx.stroke();
   });
-  const barW=Math.max(2, Math.floor(pw/(1.5*nSlots-0.5)));
-  const gap=Math.max(1, Math.round(barW*0.5));
-  const used=nSlots*barW+(nSlots-1)*gap;
-  const x0=L+Math.floor((pw-used)/2);
+  const barW=pw/(1.5*nSlots-0.5), gap=barW*0.5;
   const bins=new Array(nSlots);
   if(!stale){
     hemiSeries.forEach(function(r){
@@ -265,7 +274,7 @@ function drawHemiPlot(){
   }
   for(let i=0;i<nSlots;i++){
     const r=bins[i];
-    const x=x0+i*(barW+gap);
+    const x=L+i*(barW+gap);
     const n=r&&!stale?r.n:HOLD, s=r&&!stale?r.s:HOLD;
     const live=!!(r&&!stale);
     ctx.fillStyle=live?hpBarColor(n):BLUE;
@@ -290,7 +299,7 @@ function drawHemiPlot(){
   ctx.save();
   ctx.translate(Math.round(nx)+8, T+8); ctx.rotate(Math.PI/2);
   ctx.fillStyle="#eef3ff"; ctx.font="700 10px Segoe UI,system-ui,sans-serif"; ctx.textAlign="left";
-  ctx.fillText("Now", 0, 0);
+  ctx.fillText("At Earth", 0, 0);
   ctx.restore();
   ctx.fillStyle="#8b97b3"; ctx.font="10px Segoe UI,system-ui,sans-serif";
   const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -304,47 +313,36 @@ function drawHemiPlot(){
     ctx.fillText(label, x, cssH-7);
   }
   const note=document.getElementById("hemiPlotNote");
-  if(note) note.textContent=stale?"Feed down · blue ±17.5 GW placeholders":"6 hours · 5-minute averages · latest on the right";
-  let earth=null;
-  if(!stale){
-    for(let i=hemiSeries.length-1;i>=0;i--){ if(hemiSeries[i].fcst<=now){ earth=hemiSeries[i]; break; } }
-    if(!earth) earth=latest;
+  if(note) note.textContent=stale?"Feed down · blue ±17.5 GW placeholders":"6 hours · 5-minute averages · latest at right edge";
+  function lerpHemi(t){
+    if(!hemiSeries.length) return null;
+    let a=null,b=null;
+    for(let i=0;i<hemiSeries.length;i++){
+      const r=hemiSeries[i];
+      if(r.fcst<=t) a=r;
+      if(r.fcst>=t){ b=r; break; }
+    }
+    if(a&&b&&b.fcst!==a.fcst){
+      const u=(t-a.fcst)/(b.fcst-a.fcst);
+      return {n:a.n+u*(b.n-a.n), s:a.s+u*(b.s-a.s)};
+    }
+    return a||b;
   }
+  const earth=stale?null:lerpHemi(now);
+  const l1=stale?null:latest;
   function badge(id,v,down){
     const b=document.getElementById(id); if(!b)return;
-    b.textContent=isFinite(v)?Math.round(v)+" GW":"-";
+    b.textContent=down?"17.5 GW":(isFinite(v)?Math.round(v)+" GW":"-");
     b.style.background=down?BLUE:(isFinite(v)?hpBarColor(v):"#334155");
   }
-  if(earth){ badge("hemiN",earth.n,false); badge("hemiS",earth.s,false); }
-  else { badge("hemiN",HOLD,true); badge("hemiS",HOLD,true); }
+  badge("hemiNEarth", earth?earth.n:HOLD, !earth);
+  badge("hemiSEarth", earth?earth.s:HOLD, !earth);
+  badge("hemiNL1", l1?l1.n:HOLD, !l1);
+  badge("hemiSL1", l1?l1.s:HOLD, !l1);
 }
 function applyHemi(hemi){
-  if(!hemi){ hemiSeries=[]; drawHemiPlot(); return; }
-  hemiSeries=parseHemiSeries(hemi);
+  hemiSeries=hemi?parseHemiSeries(hemi):[];
   drawHemiPlot();
-  const lines=String(hemi).trim().split(/\n/).filter(l=>l&&!l.startsWith("#")).map(l=>l.trim().split(/\s+/)).filter(p=>p.length>=4);
-  const last3=lines.slice(-3),cur=lines[lines.length-1]||[];
-  const nNow=+cur[2], sNow=+cur[3];
-  vHemi.textContent=(isFinite(nNow)?Math.round(nNow):"-")+" / "+(isFinite(sNow)?Math.round(sNow):"-")+" GW";
-  tone(vHemi,"hemi",Math.max(nNow||0,sNow||0));
-  const poll=[30,60,120,300,600].indexOf(+cfg.pollSec)>=0?+cfg.pollSec:30;
-  const note=document.getElementById("hemiAvgNote");
-  if(poll===600){
-    const avg=i=>last3.length?last3.reduce((s,p)=>s+(+p[i]||0),0)/last3.length:NaN;
-    vHemiAvg.textContent=(isFinite(avg(2))?Math.round(avg(2)):"-")+" / "+(isFinite(avg(3))?Math.round(avg(3)):"-")+" GW";
-    tone(vHemiAvg,"hemi",Math.max(avg(2)||0,avg(3)||0));
-    if(note) note.textContent="Last three 5-min file samples · 10-min poll";
-    return;
-  }
-  if(isFinite(nNow)&&isFinite(sNow)) hemiSamples.push({t:Date.now(),n:nNow,s:sNow});
-  const cut=Date.now()-15*60000;
-  while(hemiSamples.length&&hemiSamples[0].t<cut) hemiSamples.shift();
-  if(!hemiSamples.length){vHemiAvg.textContent="-";if(note) note.textContent="Waiting for poll samples";return}
-  const an=hemiSamples.reduce((s,p)=>s+p.n,0)/hemiSamples.length;
-  const as=hemiSamples.reduce((s,p)=>s+p.s,0)/hemiSamples.length;
-  vHemiAvg.textContent=Math.round(an)+" / "+Math.round(as)+" GW";
-  tone(vHemiAvg,"hemi",Math.max(an,as));
-  if(note) note.textContent=hemiSamples.length+" sample"+(hemiSamples.length===1?"":"s")+" · every "+poll+"s · last 15 min";
 }
 function parseNoaa3DayText(txt){
   const lines=String(txt||"").split(/\n/);
