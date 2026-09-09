@@ -12,7 +12,9 @@ html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Segoe U
 a{color:var(--acc);text-decoration:none}
 header{display:grid;grid-template-columns:1fr auto 1fr;gap:8px 12px;align-items:center;padding:10px 14px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));background:var(--rail);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
 .brand{font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);justify-self:start}
-.opened{text-align:center;justify-self:center;color:var(--acc);font-variant-numeric:tabular-nums;letter-spacing:.04em;font-size:13px;white-space:nowrap}
+.opened{text-align:center;justify-self:center;color:var(--acc);font-variant-numeric:tabular-nums;letter-spacing:.03em;font-size:13px;font-weight:650;white-space:nowrap}
+#imfStatus:empty{display:none}
+.hemilegs .head{white-space:normal;line-height:1.25}
 .hdr-right{justify-self:end;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
 .shell{max-width:1680px;margin:0 auto}
 .main{padding:12px 12px 40px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
@@ -51,7 +53,7 @@ td.kp-pred{opacity:.78}
 #hemiPlot{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hemicard h2{text-align:center;letter-spacing:.14em;font-weight:650;color:#d7deee}
 .hemilegs{display:grid;grid-template-columns:1fr;gap:0;margin-top:8px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.hemilegs .row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(5.4rem,auto) minmax(5.8rem,auto);gap:8px;align-items:center;background:#0b1220;padding:9px 10px;font-size:13px;color:#c5d0e6;border-top:1px solid var(--line)}
+.hemilegs .row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(7.2rem,auto) minmax(5.8rem,auto);gap:8px;align-items:center;background:#0b1220;padding:9px 10px;font-size:13px;color:#c5d0e6;border-top:1px solid var(--line)}
 .hemilegs .row:first-child{border-top:0}
 .hemilegs .head{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:7px 10px}
 .hemilegs .head span:not(:first-child),.hemilegs .row b{justify-self:end;text-align:center}
@@ -107,17 +109,6 @@ th:first-child,td:first-child{text-align:left}
 </style>
 </head>
 <body>
-<script>
-(function(){
-  function c(){
-    var n=new Date(), t=n.toISOString().slice(11,19);
-    var u=document.getElementById("utc"); if(u) u.textContent="UTC "+t;
-    var r=document.getElementById("railUtc"); if(r) r.textContent=t+" UTC";
-  }
-  c(); setInterval(c,1000);
-})();
-</script>
-
 <header>
   <div class="brand">SpaceWx</div>
   <div class="opened" id="pageOpened">Opened —</div>
@@ -129,10 +120,18 @@ th:first-child,td:first-child{text-align:left}
 </header>
 <script>
 (function(){
-  var o=document.getElementById("pageOpened");
-  if(!o) return;
+  var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   var d=new Date();
-  o.textContent="Opened "+d.toISOString().slice(0,19).replace("T"," ")+" UTC";
+  var stamp=String(d.getUTCDate()).padStart(2,"0")+" "+months[d.getUTCMonth()]+" "+
+    String(d.getUTCHours()).padStart(2,"0")+":"+String(d.getUTCMinutes()).padStart(2,"0")+":"+String(d.getUTCSeconds()).padStart(2,"0")+" UTC";
+  var o=document.getElementById("pageOpened");
+  if(o) o.textContent="Opened "+stamp;
+  function c(){
+    var n=new Date(), t=n.toISOString().slice(11,19);
+    var u=document.getElementById("utc"); if(u) u.textContent="UTC "+t;
+    var r=document.getElementById("railUtc"); if(r) r.textContent=t+" UTC";
+  }
+  c(); setInterval(c,1000);
 })();
 </script>
 <div class="shell">
@@ -191,19 +190,12 @@ th:first-child,td:first-child{text-align:left}
 </div>
 <script>
 const DEFAULT={zip:"",lat:30.02449,lon:-97.9072,place:"30.02449, -97.90720",tz:"America/Chicago",pollSec:60};
-const HOURS=2.5;
 function loadCfg(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem("spacewx-cfg")||"{}"))}catch(e){return Object.assign({},DEFAULT)}}
 const cfg=loadCfg();
 const cache={wind:[],mag:[],goes:[],dst:[],dstPred:[],hp30:[],kp:[]};
 async function grab(u){const r=await fetch(u,{cache:"no-cache"});if(!r.ok) throw new Error(String(r.status));const ct=r.headers.get("content-type")||"";return (ct.includes("json")||u.endsWith(".json"))?r.json():r.text()}
 async function settled(u){try{return await grab(u)}catch(e){return null}}
 const last=a=>Array.isArray(a)&&a.length?a[a.length-1]:{};
-function magLat(lat,lon){
-  const poleLat=80.8*Math.PI/180, poleLon=-72.6*Math.PI/180;
-  const φ=lat*Math.PI/180, λ=lon*Math.PI/180;
-  const s=Math.sin(φ)*Math.sin(poleLat)+Math.cos(φ)*Math.cos(poleLat)*Math.cos(λ-poleLon);
-  return Math.asin(Math.max(-1,Math.min(1,s)))*180/Math.PI;
-}
 function auroraLevel(kind,n){
   if(!isFinite(n))return 0;
   if(kind==="g")return n<1?0:n<2?1:n<3?2:3;
@@ -259,12 +251,6 @@ function hpScale(peak){
   for(let i=0;i<HP_SCALES.length;i++) if(p<=HP_SCALES[i]) return HP_SCALES[i];
   return 250;
 }
-function roundRect(ctx,x,y,w,h,r){
-  const rr=Math.max(0,Math.min(r,Math.abs(w)/2,Math.abs(h)/2));
-  ctx.beginPath();
-  if(ctx.roundRect) ctx.roundRect(x,y,w,h,rr);
-  else ctx.rect(x,y,w,h);
-}
 function drawHemiPlot(){
   const el=document.getElementById("hemiPlot"); if(!el)return;
   const wrap=el.parentElement, cssW=Math.max(260,wrap.clientWidth||320), cssH=Math.max(200,wrap.clientHeight||360);
@@ -286,7 +272,7 @@ function drawHemiPlot(){
     if(!earthRow) earthRow=hemiSeries[0];
   }
   const t1=latest?latest.fcst:now;
-  const t0=t1-nSlots*STEP, span=t1-t0, xAt=function(t){return L+((t-t0)/span)*pw};
+  const t0=t1-nSlots*STEP;
   let peak=HOLD;
   if(!stale) hemiSeries.forEach(function(r){ if(r.fcst>=t0 && r.fcst<=t1) peak=Math.max(peak,r.n,r.s); });
   const mag=hpScale(peak);
@@ -366,7 +352,7 @@ function drawHemiPlot(){
     ctx.fillText(label, x, cssH-7);
   }
   const note=document.getElementById("hemiPlotNote");
-  if(note) note.textContent=stale?"Feed down · blue ±17.5 GW placeholders":"6 hours · 5-minute averages · At Earth = NOAA Forecast_Time";
+  if(note) note.textContent=stale?"Feed down · blue ±17.5 GW placeholders":"6 hours · 5-minute averages · latest at right";
   const earth=stale?null:earthRow;
   const l1=stale?null:latest;
   function badge(id,v,down){
@@ -451,28 +437,7 @@ function renderKpForecast(kf){
   kpForecast.innerHTML=html+"</table>";
 }
 function bust(u){return u+(u.includes("?")?"&":"?")+"t="+Date.now()}
-function sample(arr,n){if(!arr.length)return arr;const step=Math.max(1,Math.floor(arr.length/n));return arr.filter((_,i)=>i%step===0)}
 function parseT(t){let s=String(t||"").trim().replace(" ","T");if(!s)return NaN;s=s.replace(/\.(\d{3})\d+/,".$1");if(!/[zZ]|[+\-]\d{2}:?\d{2}$/.test(s))s+="Z";const ms=Date.parse(s);return isFinite(ms)?ms:NaN}
-function sliceHours(rows){const cut=Date.now()-HOURS*3600*1000;return (rows||[]).filter(r=>parseT(r.time_tag)>=cut)}
-function rtswActive(rows){return (Array.isArray(rows)?rows:[]).filter(r=>r&&r.active===true).sort((a,b)=>parseT(a.time_tag)-parseT(b.time_tag))}
-function chart(canvas,series,unit){
-  if(!canvas)return;
-  const w=canvas.width=Math.max(480,Math.floor(canvas.clientWidth*2)||480);
-  const h=canvas.height=420,ctx=canvas.getContext("2d");
-  const left=54,R=12,T=12,B=28,pw=w-left-R,ph=h-T-B;
-  ctx.fillStyle="#0a0e18";ctx.fillRect(0,0,w,h);
-  const all=[];series.forEach(s=>s.y.forEach(v=>{if(isFinite(v))all.push(v)}));
-  if(!all.length){ctx.fillStyle="#8b97b3";ctx.fillText("no data",left,h/2);return}
-  let ymin=Math.min(...all),ymax=Math.max(...all);if(ymin===ymax){ymin-=1;ymax+=1}
-  const pad=(ymax-ymin)*0.12;ymin-=pad;ymax+=pad;
-  const yAt=v=>T+ph-(v-ymin)/(ymax-ymin)*ph;
-  ctx.strokeStyle="#243044";ctx.fillStyle="#8b97b3";ctx.font="14px sans-serif";ctx.textAlign="right";
-  for(let i=0;i<=4;i++){const v=ymin+(ymax-ymin)*i/4,y=yAt(v);ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(w-R,y);ctx.stroke();ctx.fillText(v.toFixed(Math.abs(ymax-ymin)<10?1:0),left-6,y+4)}
-  ctx.save();ctx.translate(14,T+ph/2);ctx.rotate(-Math.PI/2);ctx.textAlign="center";ctx.fillText(unit||"nT",0,0);ctx.restore();
-  ctx.textAlign="left";ctx.fillText("-2.5h",left,h-8);ctx.textAlign="right";ctx.fillText("now",w-R,h-8);
-  if(ymin<0&&ymax>0){ctx.strokeStyle="#445067";ctx.beginPath();ctx.moveTo(left,yAt(0));ctx.lineTo(w-R,yAt(0));ctx.stroke()}
-  series.forEach(s=>{ctx.strokeStyle=s.color;ctx.lineWidth=2;ctx.beginPath();s.y.forEach((v,i)=>{if(!isFinite(v))return;const x=left+i/Math.max(1,s.y.length-1)*pw,y=yAt(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()});
-}
 function parseHapiCsv(text,keys){
   const out=[];
   String(text||"").split(/\n/).forEach(function(line){
@@ -594,7 +559,6 @@ async function loadWx(){
   if(hemi) applyHemi(hemi);
   const ok=[kp,sc,kf,dst,hemi].filter(Boolean).length;feedStatus.textContent=ok>=4?"live":ok?"partial":"DOWN";feedStatus.className=ok>=4?"ok":ok?"muted":"down";drawSw();
 }
-async function loadGoes(){}
 async function loadHp30(){
   const txt=await settled("./hp30.txt");
   if(!txt)return;
