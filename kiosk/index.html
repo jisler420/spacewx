@@ -45,6 +45,10 @@ td.kp-pred{opacity:.78}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
 .swcard{grid-column:1/-1;overflow:hidden}
 #swPlot{width:100%;height:520px;display:block;border-radius:8px;background:#0b1220;max-width:100%}
+#hemiPlot{width:100%;height:240px;display:block;border-radius:8px;background:#0b1220;max-width:100%}
+.hemilegs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.hemilegs div{display:flex;justify-content:space-between;align-items:center;background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--muted)}
+.hpbadge{display:inline-block;min-width:4.5rem;text-align:center;padding:3px 10px;border-radius:6px;font-weight:800;color:#070b12;background:#34d399}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0;overflow:hidden}
 .card h2{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .card img,canvas.chart{width:100%;max-width:100%;display:block;border-radius:8px;background:#000}
@@ -62,6 +66,7 @@ th:first-child,td:first-child{text-align:left}
   .maprow{grid-template-columns:1fr}
   .kpis-4,.kpis-6{grid-template-columns:repeat(2,minmax(0,1fr))}
   #swPlot{height:340px}
+  #hemiPlot{height:200px}
   .kpi b,.dstpair b{font-size:18px}
 }
 @media(max-width:720px){
@@ -97,6 +102,15 @@ th:first-child,td:first-child{text-align:left}
   <div class="kpis kpis-2">
     <div class="kpi"><span>Hemispheric power now N/S</span><b id="vHemi">-</b></div>
     <div class="kpi"><span>15-min average N/S</span><b id="vHemiAvg">-</b><div class="muted" id="hemiAvgNote">poll average</div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <h2>Hemispheric Power · OVATION</h2>
+    <canvas id="hemiPlot"></canvas>
+    <div class="hemilegs">
+      <div>Northern hemisphere <b id="hemiN" class="hpbadge">-</b></div>
+      <div>Southern hemisphere <b id="hemiS" class="hpbadge">-</b></div>
+    </div>
+    <div class="muted" style="margin-top:8px">Last 6 hours · 5-minute bars · Now = Earth · right of Now is still in transit L1→Earth</div>
   </div>
   <div class="kpis kpis-6">
     <div class="kpi"><span>Hp30</span><b id="vHp30">-</b></div>
@@ -170,8 +184,86 @@ function kpGCell(k,scale){
   return "<span class=\"kp\">"+k.toFixed(1)+"</span>"+(g&&g!=="G0"?"<span class=\"g "+g.toLowerCase()+"\">"+g+"</span>":"");
 }
 const hemiSamples=[];
+let hemiSeries=[];
+function hpBarColor(v){
+  const a=Math.abs(v);
+  if(a>=85)return "#f05252";
+  if(a>=50)return "#f59e42";
+  if(a>=20)return "#eab308";
+  return "#34d399";
+}
+function parseHemiSeries(txt){
+  const out=[];
+  String(txt||"").split(/\n/).forEach(function(l){
+    if(!l||l.charAt(0)==="#")return;
+    const p=l.trim().split(/\s+/);
+    if(p.length<4)return;
+    const obs=parseT(String(p[0]).replace("_","T"));
+    const fcst=parseT(String(p[1]).replace("_","T"));
+    const n=+p[2], s=+p[3];
+    if(isFinite(fcst)&&isFinite(n)&&isFinite(s)) out.push({obs:obs,fcst:fcst,n:n,s:s});
+  });
+  return out;
+}
+function drawHemiPlot(){
+  const el=document.getElementById("hemiPlot"); if(!el)return;
+  const box=el.parentElement, cssW=Math.max(260,box.clientWidth||320), cssH=(window.innerWidth<720)?200:240;
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  el.width=Math.round(cssW*dpr); el.height=Math.round(cssH*dpr);
+  el.style.width="100%"; el.style.height=cssH+"px";
+  const ctx=el.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle="#0b1220"; ctx.fillRect(0,0,cssW,cssH);
+  const L=44,R=14,T=18,B=22, pw=cssW-L-R, ph=cssH-T-B;
+  const now=Date.now(), t0=now-6*3600000;
+  const lastF=hemiSeries.length?hemiSeries[hemiSeries.length-1].fcst:now;
+  const t1=Math.max(now,lastF)+8*60000, span=t1-t0, xAt=function(t){return L+((t-t0)/span)*pw};
+  let mag=50;
+  hemiSeries.forEach(function(r){ if(r.fcst>=t0) mag=Math.max(mag,r.n,r.s); });
+  mag=Math.max(50, Math.ceil(mag/25)*25);
+  const y0=T+ph/2, yAt=function(v){return y0-(v/mag)*(ph/2)};
+  ctx.strokeStyle="#1e293b"; ctx.fillStyle="#8b97b3"; ctx.font="10px sans-serif"; ctx.textAlign="right";
+  [-mag,-mag/2,0,mag/2,mag].forEach(function(v){
+    const y=yAt(v);
+    ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+pw,y); ctx.stroke();
+    ctx.fillText(String(Math.round(v)), L-4, y+3);
+  });
+  ctx.save(); ctx.translate(12,T+ph/2); ctx.rotate(-Math.PI/2); ctx.textAlign="center"; ctx.fillText("Gigawatt",0,0); ctx.restore();
+  const barW=Math.max(2,(5*60000/span)*pw*0.82);
+  hemiSeries.forEach(function(r){
+    if(r.fcst<t0||r.fcst>t1)return;
+    const x=xAt(r.fcst);
+    ctx.globalAlpha=r.fcst>now?0.92:1;
+    ctx.fillStyle=hpBarColor(r.n);
+    ctx.fillRect(x-barW/2, yAt(r.n), barW, Math.max(1,y0-yAt(r.n)));
+    ctx.fillStyle=hpBarColor(r.s);
+    ctx.fillRect(x-barW/2, y0, barW, Math.max(1,yAt(-r.s)-y0));
+  });
+  ctx.globalAlpha=1;
+  const nx=xAt(now);
+  ctx.strokeStyle="#eef3ff"; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(nx,T); ctx.lineTo(nx,T+ph); ctx.stroke();
+  ctx.fillStyle="#eef3ff"; ctx.textAlign="center"; ctx.font="10px sans-serif"; ctx.fillText("Now", nx, T-4);
+  ctx.fillStyle="#8b97b3";
+  const startH=new Date(t0); startH.setUTCMinutes(0,0,0); startH.setUTCHours(startH.getUTCHours()+1);
+  for(let t=startH.getTime(); t<=t1; t+=3600000){
+    const dt=new Date(t);
+    const label=dt.getUTCHours()===0?dt.toISOString().slice(5,10):String(dt.getUTCHours()).padStart(2,"0")+":00";
+    ctx.fillText(label, xAt(t), cssH-6);
+  }
+  let earth=null;
+  for(let i=hemiSeries.length-1;i>=0;i--){ if(hemiSeries[i].fcst<=now){ earth=hemiSeries[i]; break; } }
+  if(!earth&&hemiSeries.length) earth=hemiSeries[0];
+  function badge(id,v){
+    const b=document.getElementById(id); if(!b)return;
+    b.textContent=isFinite(v)?Math.round(v)+" GW":"-";
+    b.style.background=isFinite(v)?hpBarColor(v):"#334155";
+  }
+  if(earth){ badge("hemiN",earth.n); badge("hemiS",earth.s); }
+}
 function applyHemi(hemi){
   if(!hemi)return;
+  hemiSeries=parseHemiSeries(hemi);
+  drawHemiPlot();
   const lines=String(hemi).trim().split(/\n/).filter(l=>l&&!l.startsWith("#")).map(l=>l.trim().split(/\s+/)).filter(p=>p.length>=4);
   const last3=lines.slice(-3),cur=lines[lines.length-1]||[];
   const nNow=+cur[2], sNow=+cur[3];
@@ -365,7 +457,7 @@ function drawDst(){
   if(pred){pred.textContent=isFinite(p)?Math.round(p)+" nT":"-";tone(pred,"dst",p)}
 }
 function drawHp30(){const d=Number(last(cache.hp30).hp30);if(isFinite(d)){vHp30.textContent=d.toFixed(1);tone(vHp30,"hp",d)}else vHp30.textContent="-"}
-function drawAll(){drawWindImf()}
+function drawAll(){drawWindImf();drawHemiPlot()}
 async function loadWindImf(){
   const now=new Date(),start=isoH(new Date(now.getTime()-36*3600000)),stop=isoH(new Date(now.getTime()+3600000));
   const [xray,prot,mag,plasma,enlil,kp,hp,kpf,dst]=await Promise.all([
@@ -454,7 +546,7 @@ const ENLIL_DIR="https://services.swpc.noaa.gov/images/animations/enlil/";
 let frames=[],fi=0,timer=null;
 function show(n){if(!frames.length)return;fi=(n+frames.length)%frames.length;enlil.src=frames[fi];enlilScrub.value=fi;enlilStamp.textContent=(fi+1)+"/"+frames.length}
 async function loadEnlil(){const html=await settled(ENLIL_DIR);frames=[...String(html||"").matchAll(/href="(enlil_[^"]+\.jpg)"/g)].map(m=>ENLIL_DIR+m[1]);frames=[...new Set(frames)].sort();if(!frames.length){enlil.src=bust(ENLIL_DIR+"latest.jpg");enlilStamp.textContent="latest";return}enlilScrub.max=frames.length-1;enlilScrub.oninput=function(){if(timer){clearInterval(timer);timer=null;enlilPlay.textContent="Play"}show(+enlilScrub.value)};enlilPlay.onclick=function(){if(timer){clearInterval(timer);timer=null;enlilPlay.textContent="Play"}else{enlilPlay.textContent="Pause";timer=setInterval(function(){show(fi+1)},180)}};show(frames.length-1)}
-function tick(){const n=new Date();utc.textContent="UTC "+n.toISOString().slice(11,19);railUtc.textContent=n.toISOString().slice(11,19)+" UTC";try{const loc=n.toLocaleTimeString("en-US",{timeZone:cfg.tz,hour12:false});local.textContent="Local "+loc;railLocal.textContent=loc+" "+(cfg.tz||"")}catch(e){}}
+function tick(){const n=new Date();utc.textContent="UTC "+n.toISOString().slice(11,19);railUtc.textContent=n.toISOString().slice(11,19)+" UTC";try{const loc=n.toLocaleTimeString("en-US",{timeZone:cfg.tz,hour12:false});local.textContent="Local "+loc;railLocal.textContent=loc+" "+(cfg.tz||"")}catch(e){} if(hemiSeries.length) drawHemiPlot()}
 function markUpdated(ts){
   const t=ts||Date.now();
   const d=new Date(t);
