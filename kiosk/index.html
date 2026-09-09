@@ -125,7 +125,7 @@ th:first-child,td:first-child{text-align:left}
 <header>
   <div class="brand">SpaceWx</div>
   <div class="clocks"><div id="utc">UTC</div><div id="local">Local</div></div>
-  <nav><a href="index.html">Live</a> · <a href="settings.html">Settings</a> · <span id="feedStatus" class="muted">checking</span> <span id="imfStatus" class="muted"></span></nav>
+  <nav><a href="index.html">Live</a> · <a href="settings.html">Settings</a> · <span id="feedStatus" class="muted">loading</span> <span id="imfStatus" class="muted"></span></nav>
 </header>
 <div class="shell">
 <main class="main">
@@ -183,10 +183,31 @@ th:first-child,td:first-child{text-align:left}
 </div>
 <script>
 const DEFAULT={zip:"",lat:30.02449,lon:-97.9072,place:"30.02449, -97.90720",tz:"America/Chicago",pollSec:60};
+const BASEPATH=(function(){
+  var p=location.pathname||"/";
+  if(!p.endsWith("/")){
+    var last=p.split("/").pop()||"";
+    p=last.indexOf(".")>=0?p.slice(0,p.length-last.length):p+"/";
+  }
+  return p;
+})();
+function loc(f){return BASEPATH+String(f||"").replace(/^\.\//,"")}
 function loadCfg(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem("spacewx-cfg")||"{}"))}catch(e){return Object.assign({},DEFAULT)}}
 const cfg=loadCfg();
 const cache={wind:[],mag:[],goes:[],dst:[],dstPred:[],hp30:[],kp:[]};
 const DOWN="Data Feed Down";
+const SNAP={
+  "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json":loc("data/kp.json"),
+  "https://services.swpc.noaa.gov/products/noaa-scales.json":loc("data/scales.json"),
+  "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json":loc("data/kf.json"),
+  "https://services.swpc.noaa.gov/text/3-day-forecast.txt":loc("data/day.txt"),
+  "https://services.swpc.noaa.gov/products/kyoto-dst.json":loc("data/dst.json"),
+  "https://services.swpc.noaa.gov/json/geospace/geospace_dst_1_hour.json":loc("data/dstPred.json"),
+  "https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt":loc("data/hemi.txt"),
+  "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json":loc("data/aurora.json"),
+  "https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json":loc("data/rtsw_mag.json"),
+  "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json":loc("data/rtsw_wind.json")
+};
 function setDown(el){if(!el)return;el.textContent=DOWN;el.className="down"}
 function applyHealth(h){
   if(!h)return;
@@ -214,39 +235,28 @@ function applyHealth(h){
 }
 async function grab(u){
   const ac=new AbortController();
-  const t=setTimeout(function(){try{ac.abort()}catch(e){}},10000);
+  const t=setTimeout(function(){try{ac.abort()}catch(e){}},8000);
   try{
-    const r=await fetch(u,{cache:"no-cache",mode:"cors",credentials:"omit",signal:ac.signal});
+    const r=await fetch(u,{credentials:"omit",signal:ac.signal});
     if(!r.ok) throw new Error(String(r.status));
     const ct=r.headers.get("content-type")||"";
     return (ct.includes("json")||/\.json(\?|$)/.test(u))?r.json():r.text();
   }finally{clearTimeout(t)}
 }
 async function settled(u){
-  try{return await grab(u)}
-  catch(e){
-    const snap={
-      "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json":"./data/kp.json",
-      "https://services.swpc.noaa.gov/products/noaa-scales.json":"./data/scales.json",
-      "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json":"./data/kf.json",
-      "https://services.swpc.noaa.gov/text/3-day-forecast.txt":"./data/day.txt",
-      "https://services.swpc.noaa.gov/products/kyoto-dst.json":"./data/dst.json",
-      "https://services.swpc.noaa.gov/json/geospace/geospace_dst_1_hour.json":"./data/dstPred.json",
-      "https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt":"./data/hemi.txt",
-      "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json":"./data/aurora.json",
-      "https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json":"./data/rtsw_mag.json",
-      "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json":"./data/rtsw_wind.json",
-      "./hp30.txt":"./hp30.txt"
-    }[u];
-    if(snap && snap!==u){try{return await grab(snap)}catch(e2){}}
-    return null;
+  const snap=SNAP[u];
+  if(snap){
+    try{const v=await grab(snap); if(v!=null && v!=="") return v;}catch(e){}
   }
+  try{return await grab(u);}catch(e){return null;}
 }
 const last=a=>Array.isArray(a)&&a.length?a[a.length-1]:{};
 function magLat(lat,lon){
   const poleLat=80.8*Math.PI/180, poleLon=-72.6*Math.PI/180;
-  const φ=lat*Math.PI/180, λ=lon*Math.PI/180;
-  const s=Math.sin(φ)*Math.sin(poleLat)+Math.cos(φ)*Math.cos(poleLat)*Math.cos(λ-poleLon);
+  const ph=lat*Math.PI/180, la=lon*Math.PI/180;
+  const s=Math.sin(ph)*Math.sin(poleLat)+Math.cos(ph)*Math.cos(poleLat)*Math.cos(la-poleLon);
+  return Math.asin(Math.max(-1,Math.min(1,s)))*180/Math.PI;
+}
   return Math.asin(Math.max(-1,Math.min(1,s)))*180/Math.PI;
 }
 function auroraLevel(kind,n){
@@ -598,26 +608,19 @@ function drawHp30(){
 }
 function drawAll(){drawWindImf();drawHemiPlot()}
 async function loadWindImf(){
-  const now=new Date(),start=isoH(new Date(now.getTime()-36*3600000)),stop=isoH(new Date(now.getTime()+3600000));
-  let [mag,plasma,enlil,hp]=await Promise.all([
-    hapi("solar_wind_mag_rt","bt,bx_gsm,by_gsm,bz_gsm",start,stop),
-    hapi("solar_wind_plasma_rt","density,speed,temperature",start,stop),
-    hapi("solar_wind_plasma_enlil_metoffice","density,speed,bt",start,stop),
-    hapi("hp30_index","Hp30",start,stop)
+  const [magN, windN]=await Promise.all([
+    settled("https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json"),
+    settled("https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json")
   ]);
-  if(!mag.length){
-    const fb=await settled("https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json");
-    if(Array.isArray(fb)) mag=fb.filter(function(r){return r&&r.active!==false}).map(function(r){return {t:parseT(r.time_tag),bt:+r.bt,bx_gsm:+r.bx_gsm,by_gsm:+r.by_gsm,bz_gsm:+r.bz_gsm}}).filter(function(r){return isFinite(r.t)});
-  }
-  if(!plasma.length){
-    const fb=await settled("https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json");
-    if(Array.isArray(fb)) plasma=fb.filter(function(r){return r&&r.active!==false}).map(function(r){return {t:parseT(r.time_tag),density:+r.proton_density,speed:+r.proton_speed,temperature:+r.proton_temperature}}).filter(function(r){return isFinite(r.t)});
-  }
-  hapiPack.mag=mag;hapiPack.plasma=plasma;hapiPack.enlil=enlil;hapiPack.hp=hp;
+  let mag=[], plasma=[];
+  if(Array.isArray(magN)) mag=magN.filter(function(r){return r&&r.active!==false}).map(function(r){return {t:parseT(r.time_tag),bt:+r.bt,bx_gsm:+r.bx_gsm,by_gsm:+r.by_gsm,bz_gsm:+r.bz_gsm}}).filter(function(r){return isFinite(r.t)});
+  if(Array.isArray(windN)) plasma=windN.filter(function(r){return r&&r.active!==false}).map(function(r){return {t:parseT(r.time_tag),density:+r.proton_density,speed:+r.proton_speed,temperature:+r.proton_temperature}}).filter(function(r){return isFinite(r.t)});
+  hapiPack.mag=mag;hapiPack.plasma=plasma;
   drawWindImf();drawHp30();
   markUpdated();
 }
 async function loadWx(){
+  try{
   const [kp,sc,kf,dayTxt,dst,dstPred,hemi]=await Promise.all([
     settled("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"),
     settled("https://services.swpc.noaa.gov/products/noaa-scales.json"),
@@ -639,9 +642,10 @@ async function loadWx(){
   const ok=[kp,sc,kf,dst,hemi].filter(Boolean).length;
   feedStatus.textContent=ok>=4?"live":ok?"partial":"retrying";
   feedStatus.className=ok>=4?"ok":"muted";
+  }catch(e){ feedStatus.textContent="retrying"; feedStatus.className="muted"; }
 }
 async function loadHp30(){
-  const txt=await settled("./hp30.txt");
+  const txt=await settled(loc("hp30.txt"));
   if(!txt)return;
   const rows=[];String(txt).split(/\n/).forEach(line=>{if(!line||line.startsWith("#"))return;const p=line.trim().split(/\s+/);if(p.length<8)return;const hp=Number(p[7]);if(!isFinite(hp)||hp<0)return;const y=+p[0],mo=+p[1],d=+p[2],h=+p[3];rows.push({time_tag:new Date(Date.UTC(y,mo-1,d,Math.floor(h),Math.round((h%1)*60))).toISOString(),hp30:hp})});
   if(rows.length){cache.hp30=rows;drawHp30()}
@@ -788,7 +792,10 @@ function applyWorkerData(data){
 
 tick();drawEarth();loadImgs();loadEnlil();
 function pullAll(){
-  loadWx();loadWindImf();loadHp30();loadAurora();
+  loadWx().catch(function(){});
+  loadWindImf().catch(function(){});
+  loadHp30().catch(function(){});
+  loadAurora().catch(function(){});
 }
 function startPolling(){
   pullAll();
