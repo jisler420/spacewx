@@ -107,7 +107,6 @@ async function settled(u, signal) {
   try {
     return await grab(u, signal);
   } catch (e) {
-    if (e && (e.name === "AbortError" || e.name === "TimeoutError")) throw e;
     return null;
   }
 }
@@ -295,7 +294,6 @@ async function loop(kind) {
     fails = 0;
     postMessage({ type: "update", data: data });
   } catch (e) {
-    if (e && (e.name === "AbortError" || e.name === "TimeoutError")) return;
     fails = Math.min(fails + 1, 6);
     postMessage({ type: "error", error: String(e && e.message ? e.message : e), fails: fails });
   } finally {
