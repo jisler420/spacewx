@@ -517,7 +517,7 @@ function drawSw(){
   let yCursor=8;
   function yAt(y0,ph,ymin,ymax,log,v){if(log){const a=Math.log10(Math.max(ymin,v)),b=Math.log10(ymin),c=Math.log10(ymax)-b;return y0+ph-((a-b)/c)*ph}return y0+ph-((v-ymin)/(ymax-ymin))*ph}
   function frame(p){
-    const y0=yCursor; yCursor+=p.h+4;
+    const y0=yCursor; yCursor+=p.h+12;
     ctx.fillStyle="#070b12";ctx.fillRect(L,y0,pw,p.h);ctx.strokeStyle="#1e293b";ctx.strokeRect(L,y0,pw,p.h);
     ctx.fillStyle="#8b97b3";ctx.save();ctx.translate(14,y0+p.h/2);ctx.rotate(-Math.PI/2);ctx.textAlign="center";ctx.font="11px sans-serif";ctx.fillText(p.title,0,0);ctx.restore();
     ctx.textAlign="right";ctx.font="10px sans-serif";
