@@ -46,11 +46,14 @@ td.kp-pred{opacity:.78}
 .swrow{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0;align-items:stretch}
 .swrow .card{min-width:0;overflow:hidden;display:flex;flex-direction:column}
 #swPlot{width:100%;height:520px;display:block;border-radius:8px;background:#0b1220;max-width:100%}
-.hemiwrap{position:relative;flex:1;min-height:280px;background:#0b1220;border-radius:8px;overflow:hidden}
+.hemiwrap{position:relative;flex:1;min-height:280px;background:#0b1220;border-radius:8px;overflow:hidden;border:1px solid #1a2436}
 #hemiPlot{position:absolute;inset:0;width:100%;height:100%;display:block}
-.hemilegs{display:grid;grid-template-columns:1fr;gap:6px;margin-top:8px}
-.hemilegs div{display:flex;justify-content:space-between;align-items:center;background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--muted)}
-.hpbadge{display:inline-block;min-width:4.6rem;text-align:center;padding:4px 12px;border-radius:999px;font-weight:800;color:#070b12;background:#34d399;font-variant-numeric:tabular-nums}
+.hemicard h2{text-align:center;letter-spacing:.14em;font-weight:650;color:#d7deee}
+.hemilegs{display:grid;grid-template-columns:1fr;gap:0;margin-top:8px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.hemilegs div{display:flex;justify-content:space-between;align-items:center;background:#0b1220;border:0;border-top:1px solid var(--line);border-radius:0;padding:10px 12px;font-size:13px;color:#c5d0e6}
+.hemilegs div:first-child{border-top:0}
+.hpbadge{display:inline-block;min-width:4.6rem;text-align:center;padding:4px 12px;border-radius:999px;font-weight:800;color:#070b12;background:#4ade80;font-variant-numeric:tabular-nums;font-size:12px}
+#hemiPlotNote{margin-top:8px;font-size:11px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0;overflow:hidden}
 .card h2{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .card img,canvas.chart{width:100%;max-width:100%;display:block;border-radius:8px;background:#000}
@@ -127,14 +130,14 @@ th:first-child,td:first-child{text-align:left}
   </div>
   <div class="cols">
     <div class="swrow">
-      <div class="card">
+      <div class="card hemicard">
         <h2>Hemispheric Power</h2>
         <div class="hemiwrap"><canvas id="hemiPlot"></canvas></div>
         <div class="hemilegs">
           <div>Northern hemisphere <b id="hemiN" class="hpbadge">-</b></div>
           <div>Southern hemisphere <b id="hemiS" class="hpbadge">-</b></div>
         </div>
-        <div class="muted" id="hemiPlotNote" style="margin-top:8px">Last 6 hours · 5-minute bars · right = latest · Now = Earth · right of Now is still in transit L1→Earth</div>
+        <div class="muted" id="hemiPlotNote">6 hours · 5-minute averages · latest on the right</div>
       </div>
       <div class="card"><h2>Solar Wind · KNMI HAPI</h2><canvas id="swPlot"></canvas><div class="muted" id="swStatus">last 36 hours + 1h pad · hourly</div></div>
     </div>
@@ -229,7 +232,7 @@ function drawHemiPlot(){
   el.width=Math.round(cssW*dpr); el.height=Math.round(cssH*dpr);
   const ctx=el.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle="#0b1220"; ctx.fillRect(0,0,cssW,cssH);
-  const L=38,R=12,T=22,B=26, pw=cssW-L-R, ph=cssH-T-B;
+  const L=50,R=10,T=10,B=24, pw=cssW-L-R, ph=cssH-T-B;
   const now=Date.now(), STEP=5*60000, nSlots=72, HOLD=17.5, BLUE="#38bdf8";
   const latest=hemiSeries.length?hemiSeries[hemiSeries.length-1]:null;
   const stale=!latest || (now-(latest.obs||latest.fcst)>15*60000);
@@ -241,14 +244,13 @@ function drawHemiPlot(){
   const y0=T+ph/2, yAt=function(v){return y0-(v/mag)*(ph/2)};
   const ticks=mag<=25?[-mag,0,mag]:[-mag,-mag/2,0,mag/2,mag];
   ctx.save();
-  roundRect(ctx,L,T,pw,ph,8); ctx.clip();
-  ctx.fillStyle="#070b12"; ctx.fillRect(L,T,pw,ph);
-  ctx.strokeStyle="#1e293b"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.rect(L,T,pw,ph); ctx.clip();
+  ctx.fillStyle="#080d16"; ctx.fillRect(L,T,pw,ph);
+  ctx.lineWidth=1;
   ticks.forEach(function(v){
-    const y=yAt(v);
-    ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+pw,y); ctx.stroke();
+    ctx.strokeStyle=v===0?"#3d4d66":"#172033";
+    ctx.beginPath(); ctx.moveTo(L,Math.round(yAt(v))+0.5); ctx.lineTo(L+pw,Math.round(yAt(v))+0.5); ctx.stroke();
   });
-  ctx.strokeStyle="#475569"; ctx.beginPath(); ctx.moveTo(L,y0); ctx.lineTo(L+pw,y0); ctx.stroke();
   const barW=Math.max(2, Math.floor(pw/(1.5*nSlots-0.5)));
   const gap=Math.max(1, Math.round(barW*0.5));
   const used=nSlots*barW+(nSlots-1)*gap;
@@ -266,42 +268,43 @@ function drawHemiPlot(){
     const x=x0+i*(barW+gap);
     const n=r&&!stale?r.n:HOLD, s=r&&!stale?r.s:HOLD;
     const live=!!(r&&!stale);
-    ctx.globalAlpha=live&&r.fcst>now?0.85:1;
     ctx.fillStyle=live?hpBarColor(n):BLUE;
-    ctx.fillRect(x, yAt(n), barW, Math.max(1,y0-yAt(n)));
+    ctx.fillRect(x, Math.round(yAt(n)), barW, Math.max(1,Math.round(y0)-Math.round(yAt(n))));
     ctx.fillStyle=live?hpBarColor(s):BLUE;
-    ctx.fillRect(x, y0, barW, Math.max(1,yAt(-s)-y0));
+    ctx.fillRect(x, Math.round(y0), barW, Math.max(1,Math.round(yAt(-s))-Math.round(y0)));
   }
-  ctx.globalAlpha=1;
   const nx=Math.min(L+pw-1,Math.max(L,xAt(now)));
-  ctx.fillStyle="rgba(238,243,255,0.05)"; ctx.fillRect(nx,T,L+pw-nx,ph);
-  ctx.strokeStyle="#eef3ff"; ctx.lineWidth=1.4;
-  ctx.beginPath(); ctx.moveTo(nx,T); ctx.lineTo(nx,T+ph); ctx.stroke();
+  ctx.fillStyle="rgba(238,243,255,0.04)"; ctx.fillRect(nx,T,L+pw-nx,ph);
+  ctx.strokeStyle="#eef3ff"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(Math.round(nx)+0.5,T); ctx.lineTo(Math.round(nx)+0.5,T+ph); ctx.stroke();
   ctx.restore();
   ctx.fillStyle="#8b97b3"; ctx.font="10px Segoe UI,system-ui,sans-serif"; ctx.textAlign="right";
   ticks.forEach(function(v){
-    ctx.fillText(String(Math.round(Math.abs(v))), L-6, yAt(v)+3);
+    ctx.fillText(String(Math.round(Math.abs(v))), L-8, Math.round(yAt(v))+3);
   });
-  ctx.fillStyle="#64748b"; ctx.font="9px Segoe UI,system-ui,sans-serif"; ctx.textAlign="left";
-  ctx.fillText("N", L+6, T+12); ctx.fillText("S", L+6, T+ph-6); ctx.fillText("GW", 6, T+10);
-  ctx.font="700 10px Segoe UI,system-ui,sans-serif";
-  const nw=ctx.measureText("Now").width;
-  const lx=Math.min(cssW-nw-16, Math.max(8, nx-nw/2-5));
-  ctx.fillStyle="#eef3ff";
-  roundRect(ctx,lx,4,nw+10,14,7); ctx.fill();
-  ctx.fillStyle="#070b12"; ctx.textAlign="center";
-  ctx.fillText("Now", lx+(nw+10)/2, 14);
+  ctx.save();
+  ctx.translate(14, T+ph/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign="center"; ctx.fillStyle="#8b97b3"; ctx.font="10px Segoe UI,system-ui,sans-serif";
+  ctx.fillText("Gigawatt", 0, 0);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(Math.round(nx)+8, T+8); ctx.rotate(Math.PI/2);
+  ctx.fillStyle="#eef3ff"; ctx.font="700 10px Segoe UI,system-ui,sans-serif"; ctx.textAlign="left";
+  ctx.fillText("Now", 0, 0);
+  ctx.restore();
   ctx.fillStyle="#8b97b3"; ctx.font="10px Segoe UI,system-ui,sans-serif";
   const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const startH=new Date(t0); startH.setUTCMinutes(0,0,0); startH.setUTCHours(startH.getUTCHours()+1);
   ctx.textAlign="center";
   for(let t=startH.getTime(); t<=t1; t+=3600000){
-    const dt=new Date(t);
+    const dt=new Date(t), x=xAt(t);
+    ctx.strokeStyle="#2a3650";
+    ctx.beginPath(); ctx.moveTo(Math.round(x)+0.5,T+ph); ctx.lineTo(Math.round(x)+0.5,T+ph+4); ctx.stroke();
     const label=(dt.getUTCHours()===0)?(dt.getUTCDate()+" "+months[dt.getUTCMonth()]):(String(dt.getUTCHours()).padStart(2,"0")+":00");
-    ctx.fillText(label, xAt(t), cssH-8);
+    ctx.fillText(label, x, cssH-7);
   }
   const note=document.getElementById("hemiPlotNote");
-  if(note) note.textContent=stale?"Feed down · blue ±17.5 GW placeholders · last 6 hours":"Last 6 hours · 5-minute bars · right = latest · Now = Earth · right of Now still L1→Earth";
+  if(note) note.textContent=stale?"Feed down · blue ±17.5 GW placeholders":"6 hours · 5-minute averages · latest on the right";
   let earth=null;
   if(!stale){
     for(let i=hemiSeries.length-1;i>=0;i--){ if(hemiSeries[i].fcst<=now){ earth=hemiSeries[i]; break; } }
