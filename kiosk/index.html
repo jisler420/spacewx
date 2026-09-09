@@ -675,7 +675,7 @@ function refreshKpis(){
 }
 setInterval(tick,1000);
 function scheduleOnMinute(fn){
-  const sec=[30,60,120,300,600].indexOf(+cfg.pollSec)>=0?+cfg.pollSec:30;
+  const sec=[30,300].indexOf(+cfg.pollSec)>=0?+cfg.pollSec:30;
   const ms=sec*1000;
   const wait=ms-(Date.now()%ms);
   setTimeout(function(){fn();setInterval(fn,ms)},wait);
