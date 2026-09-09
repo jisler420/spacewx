@@ -171,7 +171,15 @@ async function collect(kind, signal) {
     if (kf && putIfChanged(out, "kf", kf.data)) changed = true;
     if (dayTxt && putIfChanged(out, "dayTxt", dayTxt.data)) changed = true;
     if (dstPred && putIfChanged(out, "dstPred", dstPred.data)) changed = true;
-    if (aurora && putIfChanged(out, "aurora", aurora.data)) changed = true;
+    if (aurora && aurora.data) {
+      const a = aurora.data;
+      const stamp = String(a["Observation Time"] || a["Forecast Time"] || "") + ":" + ((a.coordinates && a.coordinates.length) || 0);
+      if (printCache.aurora !== stamp) {
+        printCache.aurora = stamp;
+        out.aurora = a;
+        changed = true;
+      }
+    }
     if (hp30txt && putIfChanged(out, "hp30txt", hp30txt.data)) changed = true;
   }
 
@@ -179,16 +187,21 @@ async function collect(kind, signal) {
   return out;
 }
 
-let inflight = null;
+let running = { fast: null, slow: null };
 let fails = 0;
 async function loop(kind) {
-  if (inflight) {
-    try { inflight.abort(); } catch (e) {}
-  }
+  kind = kind || "fast";
+  const keys = kind === "all" ? ["fast", "slow"] : [kind];
+  if (kind !== "all" && running[kind]) return;
   const ac = new AbortController();
-  inflight = ac;
+  keys.forEach(function (k) {
+    if (running[k] && running[k] !== ac) {
+      try { running[k].abort(); } catch (e) {}
+    }
+    running[k] = ac;
+  });
   try {
-    const data = await collect(kind || "fast", ac.signal);
+    const data = await collect(kind, ac.signal);
     if (ac.signal.aborted) return;
     fails = 0;
     postMessage({ type: "update", data: data });
@@ -197,7 +210,7 @@ async function loop(kind) {
     fails = Math.min(fails + 1, 6);
     postMessage({ type: "error", error: String(e && e.message ? e.message : e), fails: fails });
   } finally {
-    if (inflight === ac) inflight = null;
+    keys.forEach(function (k) { if (running[k] === ac) running[k] = null; });
   }
 }
 
