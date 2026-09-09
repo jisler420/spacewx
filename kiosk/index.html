@@ -9,7 +9,7 @@
 :root{--bg:#070b12;--card:#121826;--line:#2a3650;--text:#eef3ff;--muted:#8b97b3;--acc:#5eead4;--ok:#34d399;--bad:#f87171;--rail:#0b1220}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Segoe UI,system-ui,sans-serif;overflow-x:hidden;-webkit-text-size-adjust:100%;touch-action:manipulation}
-img,canvas,svg,video{max-width:100%}
+img,svg,video{max-width:100%}
 a{color:var(--acc);text-decoration:none}
 header{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:space-between;align-items:center;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));background:var(--rail);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
 .brand{font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
@@ -173,9 +173,9 @@ th:first-child,td:first-child{text-align:left}
       </div>
       <div class="card"><h2>Solar Wind · KNMI HAPI</h2><canvas id="swPlot"></canvas><div class="muted" id="swStatus">last 36 hours + 1h pad · hourly</div></div>
     </div>
-    <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil"><div class="player"><button type="button" id="enlilPlay">Play</button><input id="enlilScrub" type="range" min="0" max="0" value="0"><span class="muted" id="enlilStamp"></span></div><div class="muted" id="enlilNote"></div></div>
-    <div class="card"><h2>WAM-IPE · TEC nowcast</h2><a class="imglink" id="wamIpeA" target="_blank" rel="noopener noreferrer"><img id="wamIpe" alt="WAM-IPE"></a><div class="muted" id="wamNote">NOAA WAM-IPE · NCEP NOMADS</div></div>
-    <div class="card"><h2>Hobart BOM</h2><a class="imglink" id="hobartA" target="_blank" rel="noopener noreferrer"><img id="hobart" alt="Hobart"></a><div class="muted" id="hobartNote"></div></div>
+    <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil" referrerpolicy="no-referrer"><div class="player"><button type="button" id="enlilPlay">Play</button><input id="enlilScrub" type="range" min="0" max="0" value="0"><span class="muted" id="enlilStamp"></span></div><div class="muted" id="enlilNote"></div></div>
+    <div class="card"><h2>WAM-IPE · TEC nowcast</h2><a class="imglink" id="wamIpeA" target="_blank" rel="noopener noreferrer"><img id="wamIpe" alt="WAM-IPE" referrerpolicy="no-referrer"></a><div class="muted" id="wamNote">NOAA WAM-IPE · NCEP NOMADS</div></div>
+    <div class="card"><h2>Hobart BOM</h2><a class="imglink" id="hobartA" target="_blank" rel="noopener noreferrer"><img id="hobart" alt="Hobart" referrerpolicy="no-referrer"></a><div class="muted" id="hobartNote"></div></div>
     <div class="card"><h2>TGO Europe H</h2><a class="imglink" id="tgoA" target="_blank" rel="noopener noreferrer"><img id="tgo" alt="TGO" referrerpolicy="no-referrer"></a><div class="muted" id="tgoNote"></div></div>
   </div>
 </main>
@@ -676,10 +676,11 @@ function show(n){if(!frames.length)return;fi=(n+frames.length)%frames.length;enl
 async function loadEnlil(){const html=await settled(ENLIL_DIR);frames=[...String(html||"").matchAll(/href="(enlil_[^"]+\.jpg)"/g)].map(m=>ENLIL_DIR+m[1]);frames=[...new Set(frames)].sort();if(!frames.length){enlil.src=bust(ENLIL_DIR+"latest.jpg");enlilStamp.textContent="latest";return}enlilScrub.max=frames.length-1;enlilScrub.oninput=function(){if(timer){clearInterval(timer);timer=null;enlilPlay.textContent="Play"}show(+enlilScrub.value)};enlilPlay.onclick=function(){if(timer){clearInterval(timer);timer=null;enlilPlay.textContent="Play"}else{enlilPlay.textContent="Pause";timer=setInterval(function(){show(fi+1)},180)}};show(frames.length-1)}
 function tick(){
   const n=new Date();
-  utc.textContent="UTC "+n.toISOString().slice(11,19);
-  railUtc.textContent=n.toISOString().slice(11,19)+" UTC";
-  try{const loc=n.toLocaleTimeString("en-US",{timeZone:cfg.tz,hour12:false});local.textContent="Local "+loc;railLocal.textContent=loc+" "+(cfg.tz||"")}catch(e){}
-  if(n.getUTCSeconds()%15===0){ drawHemiPlot(); drawEarth(); }
+  const utcEl=document.getElementById("utc"), localEl=document.getElementById("local");
+  if(utcEl) utcEl.textContent="UTC "+n.toISOString().slice(11,19);
+  if(railUtc) railUtc.textContent=n.toISOString().slice(11,19)+" UTC";
+  try{const loc=n.toLocaleTimeString("en-US",{timeZone:cfg.tz,hour12:false}); if(localEl) localEl.textContent="Local "+loc; if(railLocal) railLocal.textContent=loc+" "+(cfg.tz||"")}catch(e){}
+  if(n.getUTCSeconds()%15===0){ try{drawHemiPlot()}catch(e){} try{drawEarth()}catch(e){} }
 }
 function markUpdated(ts){
   const t=ts||Date.now();
@@ -730,29 +731,49 @@ function applyWorkerData(data){
 }
 
 tick();drawEarth();loadImgs();loadEnlil();
+function workerSrc(){
+  const u=new URL(location.href);
+  let p=u.pathname||"/";
+  if(!p.endsWith("/")){
+    const last=p.split("/").pop()||"";
+    p=last.indexOf(".")>=0?p.slice(0,p.length-last.length):p+"/";
+  }
+  return u.origin+p+"spacewx-worker.js?v=20260909h3";
+}
+function startFallback(){
+  loadWx();loadWindImf();loadHp30();loadAurora();
+  if(window.__swFb) return;
+  const sec=[60,300].indexOf(+cfg.pollSec)>=0?+cfg.pollSec:60;
+  const ms=sec*1000;
+  window.__swFb=true;
+  setTimeout(function(){refreshKpis("fast");setInterval(function(){if(!workerOk) refreshKpis("fast")},ms)},Math.max(250,ms-(Date.now()%ms)));
+}
 let wxWorker=null, workerOk=false;
 try{
-  const wurl=new URL("spacewx-worker.js?v=20260909h2", document.baseURI||location.href);
-  wxWorker=new Worker(wurl);
+  wxWorker=new Worker(workerSrc());
   wxWorker.onmessage=function(e){
     if(e.data&&e.data.type==="update"){workerOk=true;applyWorkerData(e.data.data)}
-    if(e.data&&e.data.type==="error"&&e.data.fails>=3){feedStatus.textContent="partial";feedStatus.className="muted"}
+    if(e.data&&e.data.type==="error"){
+      feedStatus.textContent=e.data.fails>=3?"partial":"retrying";
+      feedStatus.className="muted";
+      if(e.data.fails>=2 && !workerOk) startFallback();
+    }
   };
-  wxWorker.onerror=function(){workerOk=false;wxWorker=null};
+  wxWorker.onerror=function(){
+    workerOk=false;
+    try{wxWorker.terminate()}catch(e){}
+    wxWorker=null;
+    startFallback();
+  };
   wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||60,hidden:document.hidden});
 }catch(e){wxWorker=null;workerOk=false}
-if(!wxWorker){loadWx();loadWindImf();loadHp30();loadAurora()}
-else setTimeout(function(){if(!auroraData) loadAurora()},8000);
+if(!wxWorker) startFallback();
+else setTimeout(function(){if(!workerOk) startFallback(); if(!auroraData) loadAurora()},5000);
 function refreshKpis(kind){
-  if(wxWorker){try{wxWorker.postMessage({type:"poll",kind:kind||"fast"});workerOk=true;return}catch(e){wxWorker=null;workerOk=false}}
+  if(wxWorker){try{wxWorker.postMessage({type:"poll",kind:kind||"fast"});return}catch(e){wxWorker=null;workerOk=false}}
   loadWx();loadWindImf();loadHp30();loadAurora();
 }
 setInterval(tick,1000);
-if(!wxWorker){
-  const sec=[60,300].indexOf(+cfg.pollSec)>=0?+cfg.pollSec:60;
-  const ms=sec*1000;
-  setTimeout(function(){refreshKpis("fast");setInterval(function(){refreshKpis("fast")},ms)},ms-(Date.now()%ms));
-}
 setInterval(function(){loadImgs();loadEnlil();drawEarth()},300000);
 document.addEventListener("visibilitychange",function(){
   if(wxWorker){try{wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||60,hidden:document.hidden})}catch(e){}}
