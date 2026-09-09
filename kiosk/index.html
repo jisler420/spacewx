@@ -232,10 +232,11 @@ function drawHemiPlot(){
   const L=38,R=12,T=22,B=26, pw=cssW-L-R, ph=cssH-T-B;
   const now=Date.now();
   const lastF=hemiSeries.length?hemiSeries[hemiSeries.length-1].fcst:now;
-  const t1=Math.max(now,lastF);
-  const t0=t1-6*3600000, span=t1-t0, xAt=function(t){return L+((t-t0)/span)*pw};
+  const STEP=5*60000, nSlots=72;
+  const t1=Math.ceil(Math.max(now, lastF)/STEP)*STEP;
+  const t0=t1-nSlots*STEP, span=t1-t0, xAt=function(t){return L+((t-t0)/span)*pw};
   let peak=0;
-  hemiSeries.forEach(function(r){ if(r.fcst>=t0) peak=Math.max(peak,r.n,r.s); });
+  hemiSeries.forEach(function(r){ if(r.fcst>=t0 && r.fcst<=t1) peak=Math.max(peak,r.n,r.s); });
   const mag=hpScale(peak);
   const y0=T+ph/2, yAt=function(v){return y0-(v/mag)*(ph/2)};
   const ticks=mag<=25?[-mag,0,mag]:[-mag,-mag/2,0,mag/2,mag];
@@ -248,18 +249,24 @@ function drawHemiPlot(){
     ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+pw,y); ctx.stroke();
   });
   ctx.strokeStyle="#475569"; ctx.beginPath(); ctx.moveTo(L,y0); ctx.lineTo(L+pw,y0); ctx.stroke();
-  const slot=(5*60000/span)*pw, barW=Math.max(1.5,slot*(2/3));
+  const barW=Math.max(2, Math.floor(pw/(1.5*nSlots-0.5)));
+  const gap=Math.max(1, Math.round(barW*0.5));
+  const used=nSlots*barW+(nSlots-1)*gap;
+  const x0=L+Math.floor((pw-used)/2);
+  const bins=new Array(nSlots);
   hemiSeries.forEach(function(r){
-    if(r.fcst<t0||r.fcst>t1)return;
-    const x=xAt(r.fcst), future=r.fcst>now;
-    ctx.globalAlpha=future?0.85:1;
-    const hn=Math.max(1,y0-yAt(r.n));
-    ctx.fillStyle=hpBarColor(r.n);
-    roundRect(ctx,x-barW/2,yAt(r.n),barW,hn,Math.min(2,barW/2)); ctx.fill();
-    const hs=Math.max(1,yAt(-r.s)-y0);
-    ctx.fillStyle=hpBarColor(r.s);
-    roundRect(ctx,x-barW/2,y0,barW,hs,Math.min(2,barW/2)); ctx.fill();
+    const i=Math.round((r.fcst-t0)/STEP);
+    if(i>=0&&i<nSlots) bins[i]=r;
   });
+  for(let i=0;i<nSlots;i++){
+    const r=bins[i]; if(!r) continue;
+    const x=x0+i*(barW+gap);
+    ctx.globalAlpha=r.fcst>now?0.85:1;
+    ctx.fillStyle=hpBarColor(r.n);
+    ctx.fillRect(x, yAt(r.n), barW, Math.max(1,y0-yAt(r.n)));
+    ctx.fillStyle=hpBarColor(r.s);
+    ctx.fillRect(x, y0, barW, Math.max(1,yAt(-r.s)-y0));
+  }
   ctx.globalAlpha=1;
   const nx=Math.min(L+pw-1,Math.max(L,xAt(now)));
   ctx.fillStyle="rgba(238,243,255,0.05)"; ctx.fillRect(nx,T,L+pw-nx,ph);
