@@ -267,7 +267,7 @@ function drawHemiPlot(){
   const L=50,R=10,T=22,B=24, pw=cssW-L-R, ph=cssH-T-B;
   const now=Date.now(), STEP=5*60000, nSlots=72, HOLD=17.5, BLUE="#38bdf8";
   const latest=hemiSeries.length?hemiSeries[hemiSeries.length-1]:null;
-  const stale=!latest || (now-(latest.obs||latest.fcst)>20*60000);
+  const stale=!latest || (now-(latest.fcst||latest.obs)>25*60000);
   let earthRow=null;
   if(hemiSeries.length){
     for(let i=0;i<hemiSeries.length;i++){
@@ -378,6 +378,11 @@ function applyHemi(hemi, ts){
   const rows=hemi?parseHemiSeries(hemi):[];
   if(rows.length){ hemiSeries=rows; hemiPolledAt=ts||Date.now(); }
   drawHemiPlot();
+}
+async function refreshHemi(){
+  const txt=await settled("https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt");
+  if(txt) applyHemi(txt);
+  else try{drawHemiPlot()}catch(e){}
 }
 function parseNoaa3DayText(txt){
   const lines=String(txt||"").split(/\n/);
@@ -681,10 +686,11 @@ tick();
 try{drawHemiPlot()}catch(e){}
 drawEarth();loadImgs();loadEnlil();
 (function scheduleHemi(){
+  refreshHemi();
   const ms=5*60000;
   setTimeout(function(){
-    try{drawHemiPlot()}catch(e){}
-    setInterval(function(){try{drawHemiPlot()}catch(e){}}, ms);
+    refreshHemi();
+    setInterval(refreshHemi, ms);
   }, ms-(Date.now()%ms));
 })();
 let wxWorker=null, workerOk=false;
