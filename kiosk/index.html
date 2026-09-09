@@ -608,8 +608,24 @@ async function loadHp30(){
 }
 function armImg(img, note, okText){
   if(!img) return;
-  img.onload=function(){img.style.opacity="1"; if(note){note.textContent=okText||""; note.className="muted"}};
-  img.onerror=function(){img.style.opacity=".2"; if(note){note.textContent=DOWN; note.className="down"}};
+  img.onload=function(){
+    img.dataset.tries="0";
+    img.style.opacity="1";
+    if(note){note.textContent=okText||""; note.className="muted"}
+  };
+  img.onerror=function(){
+    img.style.opacity=".2";
+    if(note){note.textContent=DOWN; note.className="down"}
+    const n=(+img.dataset.tries||0)+1;
+    img.dataset.tries=String(n);
+    if(n<=6){
+      setTimeout(function(){
+        const raw=img.src||"";
+        const base=raw.replace(/[?&]t=\d+/g,"");
+        img.src=base+(base.indexOf("?")>=0?"&":"?")+"t="+Date.now();
+      }, Math.min(120000, 4000*n));
+    }
+  };
 }
 function loadImgs(){
   const H="https://www.sws.bom.gov.au/Images/Geophysical/Latest%20Conditions/Magnetograms/Hobart.gif";
@@ -738,46 +754,88 @@ function workerSrc(){
     const last=p.split("/").pop()||"";
     p=last.indexOf(".")>=0?p.slice(0,p.length-last.length):p+"/";
   }
-  return u.origin+p+"spacewx-worker.js?v=20260909h3";
+  return u.origin+p+"spacewx-worker.js?v=20260909h4";
 }
+let wxWorker=null, workerOk=false, lastPulse=0, respawnTimer=null;
 function startFallback(){
-  loadWx();loadWindImf();loadHp30();loadAurora();
+  try{loadWx()}catch(e){}
+  try{loadWindImf()}catch(e){}
+  try{loadHp30()}catch(e){}
+  try{loadAurora()}catch(e){}
   if(window.__swFb) return;
   const sec=[60,300].indexOf(+cfg.pollSec)>=0?+cfg.pollSec:60;
   const ms=sec*1000;
   window.__swFb=true;
-  setTimeout(function(){refreshKpis("fast");setInterval(function(){if(!workerOk) refreshKpis("fast")},ms)},Math.max(250,ms-(Date.now()%ms)));
+  setTimeout(function(){
+    refreshKpis("fast");
+    setInterval(function(){ if(!workerOk) refreshKpis("fast"); }, ms);
+  }, Math.max(250, ms-(Date.now()%ms)));
 }
-let wxWorker=null, workerOk=false;
-try{
-  wxWorker=new Worker(workerSrc());
-  wxWorker.onmessage=function(e){
-    if(e.data&&e.data.type==="update"){workerOk=true;applyWorkerData(e.data.data)}
-    if(e.data&&e.data.type==="error"){
-      feedStatus.textContent=e.data.fails>=3?"partial":"retrying";
-      feedStatus.className="muted";
-      if(e.data.fails>=2 && !workerOk) startFallback();
-    }
-  };
-  wxWorker.onerror=function(){
-    workerOk=false;
-    try{wxWorker.terminate()}catch(e){}
-    wxWorker=null;
+function spawnWorker(){
+  try{ if(wxWorker) wxWorker.terminate(); }catch(e){}
+  wxWorker=null;
+  try{
+    wxWorker=new Worker(workerSrc()+"&r="+Date.now());
+    wxWorker.onmessage=function(e){
+      lastPulse=Date.now();
+      if(e.data&&(e.data.type==="hello"||e.data.type==="update")) workerOk=true;
+      if(e.data&&e.data.type==="update") applyWorkerData(e.data.data);
+      if(e.data&&e.data.type==="error"){
+        feedStatus.textContent="retrying";
+        feedStatus.className="muted";
+        if(!workerOk) startFallback();
+      }
+    };
+    wxWorker.onerror=function(){
+      workerOk=false;
+      try{wxWorker.terminate()}catch(e){}
+      wxWorker=null;
+      startFallback();
+      queueRespawn(8000);
+    };
+    wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||60,hidden:document.hidden});
+  }catch(e){
+    wxWorker=null; workerOk=false;
     startFallback();
-  };
-  wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||60,hidden:document.hidden});
-}catch(e){wxWorker=null;workerOk=false}
-if(!wxWorker) startFallback();
-else setTimeout(function(){if(!workerOk) startFallback(); if(!auroraData) loadAurora()},5000);
-function refreshKpis(kind){
-  if(wxWorker){try{wxWorker.postMessage({type:"poll",kind:kind||"fast"});return}catch(e){wxWorker=null;workerOk=false}}
-  loadWx();loadWindImf();loadHp30();loadAurora();
+    queueRespawn(8000);
+  }
 }
+function queueRespawn(ms){
+  if(respawnTimer) return;
+  respawnTimer=setTimeout(function(){ respawnTimer=null; spawnWorker(); }, ms||8000);
+}
+function refreshKpis(kind){
+  if(wxWorker){ try{ wxWorker.postMessage({type:"poll",kind:kind||"fast"}); return; }catch(e){ wxWorker=null; workerOk=false; } }
+  startFallback();
+}
+spawnWorker();
+setTimeout(function(){ if(!workerOk) startFallback(); }, 4000);
+setInterval(function(){
+  const age=Date.now()-lastPulse;
+  if(age>25000){
+    workerOk=false;
+    feedStatus.textContent="recovering";
+    feedStatus.className="muted";
+    spawnWorker();
+    startFallback();
+  }
+}, 10000);
 setInterval(tick,1000);
-setInterval(function(){loadImgs();loadEnlil();drawEarth()},300000);
+setInterval(function(){ try{loadImgs()}catch(e){} try{loadEnlil()}catch(e){} try{drawEarth()}catch(e){} },300000);
+window.addEventListener("online", function(){
+  feedStatus.textContent="reconnecting";
+  feedStatus.className="muted";
+  spawnWorker();
+  startFallback();
+  try{loadImgs()}catch(e){}
+  try{loadEnlil()}catch(e){}
+});
 document.addEventListener("visibilitychange",function(){
   if(wxWorker){try{wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||60,hidden:document.hidden})}catch(e){}}
-  if(!document.hidden) refreshKpis("all");
+  if(!document.hidden){
+    if(!wxWorker || Date.now()-lastPulse>20000) spawnWorker();
+    refreshKpis("all");
+  }
 });
 window.addEventListener("resize",function(){
   clearTimeout(window.__swResize);
