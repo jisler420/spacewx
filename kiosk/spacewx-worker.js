@@ -214,12 +214,12 @@ async function loop(kind) {
   }
 }
 
-let userSec = 30;
+let userSec = 60;
 let hidden = false;
 let waitFast = null, beatFast = null, waitSlow = null, beatSlow = null;
 
 function effectiveFast() {
-  return hidden ? 300 : ([30, 300].indexOf(userSec) >= 0 ? userSec : 30);
+  return hidden ? 300 : ([60, 300].indexOf(userSec) >= 0 ? userSec : 60);
 }
 
 function delayMs(base) {
