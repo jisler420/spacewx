@@ -2,36 +2,39 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>SpaceWx</title>
 <style>
 :root{--bg:#070b12;--card:#121826;--line:#2a3650;--text:#eef3ff;--muted:#8b97b3;--acc:#5eead4;--ok:#34d399;--bad:#f87171;--rail:#0b1220}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Segoe UI,system-ui,sans-serif}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 Segoe UI,system-ui,sans-serif;overflow-x:hidden;-webkit-text-size-adjust:100%}
 a{color:var(--acc);text-decoration:none}
-header{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;padding:12px 18px;background:var(--rail);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
+header{display:flex;flex-wrap:wrap;gap:8px 12px;justify-content:space-between;align-items:center;padding:10px 14px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));background:var(--rail);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
 .brand{font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
 .shell{max-width:1680px;margin:0 auto}
-.main{padding:14px 16px 48px}
-.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:12px}
-@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
-.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
-.kpi b{display:block;font-size:22px}
+.main{padding:12px 12px 40px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+.kpis{display:grid;gap:8px;margin-bottom:12px}
+.kpis-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpis-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpis-6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;overflow:hidden}
+.kpi b{display:block;font-size:22px;word-break:break-word}
 .dstpair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
 .dstpair .lab{color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
 .dstpair b{font-size:22px;line-height:1.1}
 .tone0{color:#eef3ff}.tone1{color:#f5d76e}.tone2{color:#f59e42}.tone3{color:#f05252}
 .kpi span{color:var(--muted);font-size:11px;text-transform:uppercase}
+.short{display:none}
 .maprow{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,32%);gap:12px;align-items:stretch;margin-bottom:12px}
-@media(max-width:900px){.maprow{grid-template-columns:1fr}}
-.mapbox{position:relative;width:100%;min-height:260px;aspect-ratio:2/1;border-radius:12px;border:1px solid var(--line);overflow:hidden;background:#000}
-.maprow .card{height:100%;min-height:260px}
+.mapbox{position:relative;width:100%;min-height:220px;aspect-ratio:2/1;border-radius:12px;border:1px solid var(--line);overflow:hidden;background:#000}
+.maprow .card{height:100%;min-height:220px;min-width:0}
 #earth{position:absolute;inset:0;width:100%;height:100%;display:block}
 td.kp-now{outline:1px solid var(--acc);background:#102018}
 td.kp-g{color:#cbd5e1}td.kp-4{background:#3b2a10;color:#fde68a}td.kp-5{background:#431407;color:#fdba74}td.kp-7{background:#450a0a;color:#fecaca}
 td.kp-pred{opacity:.78}
-#kpForecast table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+#kpForecast{overflow-x:auto;-webkit-overflow-scrolling:touch}
+#kpForecast table{width:100%;min-width:280px;border-collapse:collapse;font-variant-numeric:tabular-nums}
 #kpForecast th{padding:4px 2px 8px;font-size:11px;font-weight:600;color:#8b97b3;text-align:center}
 #kpForecast th:first-child,#kpForecast td:first-child{text-align:left;color:#8b97b3;font-size:11px}
 #kpForecast td{padding:5px 2px;text-align:center;border-radius:6px;vertical-align:top}
@@ -40,21 +43,34 @@ td.kp-pred{opacity:.78}
 #kpForecast .g0{color:#64748b}#kpForecast .g1{color:#f5d76e}#kpForecast .g2{color:#f59e42}#kpForecast .g3{color:#fb7185}#kpForecast .g4,#kpForecast .g5{color:#f05252}
 #kpForecast .day{display:block;color:#eef3ff}#kpForecast .md{display:block;font-weight:400;color:#8b97b3;font-size:10px}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
-.swcard{grid-column:1/-1}
-#swPlot{width:100%;height:520px;display:block;border-radius:8px;background:#0b1220}
-@media(max-width:980px){.cols{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+.swcard{grid-column:1/-1;overflow:hidden}
+#swPlot{width:100%;height:520px;display:block;border-radius:8px;background:#0b1220;max-width:100%}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0;overflow:hidden}
 .card h2{margin:0 0 8px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
-.card img,canvas.chart{width:100%;display:block;border-radius:8px;background:#000}
+.card img,canvas.chart{width:100%;max-width:100%;display:block;border-radius:8px;background:#000}
 canvas.chart{height:210px;background:#0a0e18}
 .muted{color:var(--muted);font-size:12px}
 .ok{color:var(--ok)}.down{color:var(--bad)}
 .player{display:flex;gap:8px;align-items:center;margin-top:8px}
-.player button{background:#101827;color:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
-.player input{flex:1}
+.player button{background:#101827;color:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;min-height:40px}
+.player input{flex:1;min-width:0;height:32px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:6px 4px;border-bottom:1px solid #1d2738;text-align:center}
 th:first-child,td:first-child{text-align:left}
+@media(max-width:980px){
+  .cols{grid-template-columns:1fr}
+  .maprow{grid-template-columns:1fr}
+  .kpis-4,.kpis-6{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #swPlot{height:340px}
+  .kpi b,.dstpair b{font-size:18px}
+}
+@media(max-width:720px){
+  header{font-size:13px}
+  .long{display:none}.short{display:inline}
+  #kpForecast .kp{font-size:13px}
+  #kpForecast .g{display:block;margin-left:0;margin-top:2px}
+  .main{padding:10px 10px 32px}
+}
 </style>
 </head>
 <body>
@@ -66,7 +82,7 @@ th:first-child,td:first-child{text-align:left}
 </header>
 <div class="shell">
 <main class="main">
-  <div class="kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+  <div class="kpis kpis-4">
     <div class="kpi"><span>Observer</span><b id="railUtc">-</b><div class="muted" id="railLocal"></div><div class="muted" id="updatedAt">Updated —</div></div>
     <div class="kpi"><span>Aurora visibility</span><b id="vAurora">-</b><div class="muted">At this location · OVATION</div></div>
     <div class="kpi"><span>NOAA scales</span><b id="vRsg">-</b><div class="muted">R · S · G</div></div>
@@ -78,16 +94,16 @@ th:first-child,td:first-child{text-align:left}
       </div>
     </div>
   </div>
-  <div class="kpis" style="grid-template-columns:repeat(2,1fr)">
+  <div class="kpis kpis-2">
     <div class="kpi"><span>Hemispheric power now N/S</span><b id="vHemi">-</b></div>
     <div class="kpi"><span>15-min average N/S</span><b id="vHemiAvg">-</b><div class="muted" id="hemiAvgNote">poll average</div></div>
   </div>
-  <div class="kpis">
+  <div class="kpis kpis-6">
     <div class="kpi"><span>Hp30</span><b id="vHp30">-</b></div>
     <div class="kpi"><span>Kp now</span><b id="vKp">-</b></div>
     <div class="kpi"><span>Speed</span><b id="vWind">-</b></div>
     <div class="kpi"><span>Density</span><b id="vDen">-</b></div>
-    <div class="kpi"><span>Interplanetary Magnetic Field Bt</span><b id="vBt">-</b></div>
+    <div class="kpi"><span class="long">Interplanetary Magnetic Field Bt</span><span class="short">IMF Bt</span><b id="vBt">-</b></div>
     <div class="kpi"><span>Bz</span><b id="vBz">-</b></div>
   </div>
   <div class="maprow">
@@ -310,12 +326,13 @@ function samp(arr,n){if(!arr||!arr.length)return [];if(arr.length<=n)return arr;
 function drawSw(){
   const el=document.getElementById("swPlot"); if(!el)return;
   const now=Date.now(),t0=now-36*3600000,t1=now+3600000;
-  const box=el.parentElement,cssW=Math.max(640,box.clientWidth||960),cssH=520,dpr=Math.min(2,window.devicePixelRatio||1);
-  el.width=Math.round(cssW*dpr);el.height=Math.round(cssH*dpr);el.style.width=cssW+"px";el.style.height=cssH+"px";
+  const box=el.parentElement,cssW=Math.max(260,box.clientWidth||320),cssH=cssW<720?340:520,dpr=Math.min(2,window.devicePixelRatio||1);
+  el.width=Math.round(cssW*dpr);el.height=Math.round(cssH*dpr);el.style.width="100%";el.style.height=cssH+"px";
   const ctx=el.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.fillStyle="#0b1220";ctx.fillRect(0,0,cssW,cssH);
-  const L=70,R=16,pw=cssW-L-R,span=t1-t0,xAt=t=>L+((t-t0)/span)*pw;
-  const panels=[{title:"IMF nT",log:0,ymin:-20,ymax:20,h:200},{title:"Speed km/s",log:0,ymin:200,ymax:900,h:130},{title:"Hp30",log:0,ymin:0,ymax:9,h:110}];
+  const L=cssW<500?40:70,R=12,pw=cssW-L-R,span=t1-t0,xAt=t=>L+((t-t0)/span)*pw;
+  const scale=cssH/520;
+  const panels=[{title:"IMF nT",log:0,ymin:-20,ymax:20,h:Math.round(200*scale)},{title:"Speed km/s",log:0,ymin:200,ymax:900,h:Math.round(130*scale)},{title:"Hp30",log:0,ymin:0,ymax:9,h:Math.round(110*scale)}];
   let yCursor=8;
   function yAt(y0,ph,ymin,ymax,log,v){if(log){const a=Math.log10(Math.max(ymin,v)),b=Math.log10(ymin),c=Math.log10(ymax)-b;return y0+ph-((a-b)/c)*ph}return y0+ph-((v-ymin)/(ymax-ymin))*ph}
   function frame(p){
