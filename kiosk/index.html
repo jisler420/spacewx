@@ -474,6 +474,20 @@ function drawWindImf(){
   drawSw();
 }
 function samp(arr,n){if(!arr||!arr.length)return [];if(arr.length<=n)return arr;const out=[],step=arr.length/n;for(let i=0;i<n;i++)out.push(arr[Math.min(arr.length-1,Math.floor(i*step))]);return out}
+const IMF_SCALES=[10,15,20,25,30,40,50,75,100];
+function imfScale(peak){const p=Math.max(0,peak||0);for(let i=0;i<IMF_SCALES.length;i++) if(p<=IMF_SCALES[i]) return IMF_SCALES[i];return 100}
+function imfPeak(t0,t1){
+  let p=0;
+  function consider(rows,keys){
+    (rows||[]).forEach(function(r){
+      if(!isFinite(r.t)||r.t<t0||r.t>t1) return;
+      keys.forEach(function(k){const v=Math.abs(r[k]); if(isFinite(v)&&v>p) p=v});
+    });
+  }
+  consider(hapiPack.mag,["bt","bz_gsm","by_gsm","bx_gsm"]);
+  consider(hapiPack.enlil,["bt"]);
+  return p;
+}
 function drawSw(){
   const el=document.getElementById("swPlot"); if(!el)return;
   const now=Date.now(),t0=now-36*3600000,t1=now+3600000;
@@ -483,7 +497,8 @@ function drawSw(){
   ctx.fillStyle="#0b1220";ctx.fillRect(0,0,cssW,cssH);
   const L=cssW<500?40:70,R=12,pw=cssW-L-R,span=t1-t0,xAt=t=>L+((t-t0)/span)*pw;
   const scale=cssH/520;
-  const panels=[{title:"IMF nT",log:0,ymin:-20,ymax:20,h:Math.round(200*scale)},{title:"Speed km/s",log:0,ymin:200,ymax:900,h:Math.round(130*scale)},{title:"Hp30",log:0,ymin:0,ymax:9,h:Math.round(110*scale)}];
+  const mag=imfScale(imfPeak(t0,t1));
+  const panels=[{title:"IMF nT",log:0,ymin:-mag,ymax:mag,h:Math.round(200*scale)},{title:"Speed km/s",log:0,ymin:200,ymax:900,h:Math.round(130*scale)},{title:"Hp30",log:0,ymin:0,ymax:9,h:Math.round(110*scale)}];
   let yCursor=8;
   function yAt(y0,ph,ymin,ymax,log,v){if(log){const a=Math.log10(Math.max(ymin,v)),b=Math.log10(ymin),c=Math.log10(ymax)-b;return y0+ph-((a-b)/c)*ph}return y0+ph-((v-ymin)/(ymax-ymin))*ph}
   function frame(p){
@@ -491,7 +506,8 @@ function drawSw(){
     ctx.fillStyle="#070b12";ctx.fillRect(L,y0,pw,p.h);ctx.strokeStyle="#1e293b";ctx.strokeRect(L,y0,pw,p.h);
     ctx.fillStyle="#8b97b3";ctx.save();ctx.translate(14,y0+p.h/2);ctx.rotate(-Math.PI/2);ctx.textAlign="center";ctx.font="11px sans-serif";ctx.fillText(p.title,0,0);ctx.restore();
     ctx.textAlign="right";ctx.font="10px sans-serif";
-    for(let g=0;g<=2;g++){const f=g/2,v=p.log?Math.pow(10,Math.log10(p.ymin)+f*(Math.log10(p.ymax)-Math.log10(p.ymin))):p.ymin+f*(p.ymax-p.ymin),y=y0+p.h-f*p.h;ctx.strokeStyle="#1e293b";ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(L+pw,y);ctx.stroke();ctx.fillStyle="#8b97b3";ctx.fillText(p.log?v.toExponential(0):String(Math.round(v*10)/10),L-4,y+3)}
+    const steps=p.ymin<0?4:2;
+    for(let g=0;g<=steps;g++){const f=g/steps,v=p.log?Math.pow(10,Math.log10(p.ymin)+f*(Math.log10(p.ymax)-Math.log10(p.ymin))):p.ymin+f*(p.ymax-p.ymin),y=y0+p.h-f*p.h;ctx.strokeStyle="#1e293b";ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(L+pw,y);ctx.stroke();ctx.fillStyle="#8b97b3";ctx.fillText(p.log?v.toExponential(0):String(Math.round(v*10)/10),L-4,y+3)}
     const nx=xAt(now);ctx.strokeStyle="#5eead4";ctx.globalAlpha=0.35;ctx.beginPath();ctx.moveTo(nx,y0);ctx.lineTo(nx,y0+p.h);ctx.stroke();ctx.globalAlpha=1;
     return y0;
   }
