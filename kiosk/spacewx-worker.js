@@ -76,31 +76,35 @@ function hapiStart(arr) {
 }
 
 function mixSignal(outer) {
+  const ac = new AbortController();
+  setTimeout(function () { try { ac.abort(); } catch (e) {} }, 12000);
   try {
-    const t = AbortSignal.timeout(12000);
-    if (!outer) return t;
-    if (typeof AbortSignal.any === "function") return AbortSignal.any([outer, t]);
-    return outer;
-  } catch (e) {
-    return outer || undefined;
-  }
+    if (outer && typeof AbortSignal.any === "function") return AbortSignal.any([outer, ac.signal]);
+  } catch (e) {}
+  return ac.signal;
 }
 
 async function grab(u, signal) {
-  const headers = {};
-  if (etag[u]) headers["If-None-Match"] = etag[u];
-  if (lastMod[u]) headers["If-Modified-Since"] = lastMod[u];
-  const r = await fetch(u, { cache: "no-cache", headers: headers, signal: mixSignal(signal) });
-  if (r.status === 304 && bodyCache[u] !== undefined) return { data: bodyCache[u], cached: true };
-  if (!r.ok) throw new Error(String(r.status));
-  const e = r.headers.get("etag");
-  const m = r.headers.get("last-modified");
-  if (e) etag[u] = e;
-  if (m) lastMod[u] = m;
-  const ct = r.headers.get("content-type") || "";
-  const data = ct.includes("json") || u.endsWith(".json") ? await r.json() : await r.text();
-  bodyCache[u] = data;
-  return { data: data, cached: false };
+  try {
+    const headers = {};
+    if (etag[u]) headers["If-None-Match"] = etag[u];
+    if (lastMod[u]) headers["If-Modified-Since"] = lastMod[u];
+    const r = await fetch(u, { cache: "no-cache", headers: headers, signal: mixSignal(signal) });
+    if (r.status === 304 && bodyCache[u] !== undefined) return { data: bodyCache[u], cached: true };
+    if (!r.ok) throw new Error(String(r.status));
+    const e = r.headers.get("etag");
+    const m = r.headers.get("last-modified");
+    if (e) etag[u] = e;
+    if (m) lastMod[u] = m;
+    const ct = r.headers.get("content-type") || "";
+    const data = ct.includes("json") || u.endsWith(".json") ? await r.json() : await r.text();
+    bodyCache[u] = data;
+    return { data: data, cached: false };
+  } catch (err) {
+    delete etag[u];
+    delete lastMod[u];
+    throw err;
+  }
 }
 
 async function settled(u, signal) {
@@ -282,12 +286,7 @@ async function loop(kind) {
   const keys = kind === "all" ? ["fast", "slow"] : [kind];
   if (kind !== "all" && running[kind]) return;
   const ac = new AbortController();
-  keys.forEach(function (k) {
-    if (running[k] && running[k] !== ac) {
-      try { running[k].abort(); } catch (e) {}
-    }
-    running[k] = ac;
-  });
+  keys.forEach(function (k) { running[k] = ac; });
   try {
     const data = await collect(kind, ac.signal);
     if (ac.signal.aborted) return;
@@ -296,6 +295,7 @@ async function loop(kind) {
   } catch (e) {
     fails = Math.min(fails + 1, 6);
     postMessage({ type: "error", error: String(e && e.message ? e.message : e), fails: fails });
+    setTimeout(function () { loop(kind); }, Math.min(30000, 1500 * fails));
   } finally {
     keys.forEach(function (k) { if (running[k] === ac) running[k] = null; });
   }
@@ -344,3 +344,4 @@ onmessage = function (e) {
 
 loop("all");
 arm();
+postMessage({ type: "hello" });
