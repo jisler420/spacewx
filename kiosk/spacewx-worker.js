@@ -136,26 +136,24 @@ async function collect(kind, signal) {
   const wantSlow = kind === "slow" || kind === "all";
 
   if (wantFast) {
-    const [mag, plasma, hp, dst, hemi] = await Promise.all([
+    const [mag, plasma, dst, hemi] = await Promise.all([
       hapi("solar_wind_mag_rt", "bt,bx_gsm,by_gsm,bz_gsm", hapiStart(series.mag), stop, signal),
       hapi("solar_wind_plasma_rt", "density,speed,temperature", hapiStart(series.plasma), stop, signal),
-      hapi("hp30_index", "Hp30", hapiStart(series.hp), stop, signal),
       settled(NOAA.dst, signal),
       settled(NOAA.hemi, signal),
     ]);
     series.mag = mergeRows(series.mag, mag);
     series.plasma = mergeRows(series.plasma, plasma);
-    series.hp = mergeRows(series.hp, hp);
     if (putIfChanged(out, "mag", series.mag)) changed = true;
     if (putIfChanged(out, "plasma", series.plasma)) changed = true;
-    if (putIfChanged(out, "hp", series.hp)) changed = true;
     if (dst && putIfChanged(out, "dst", dst.data)) changed = true;
     if (hemi && putIfChanged(out, "hemi", hemi.data)) changed = true;
   }
 
   if (wantSlow) {
-    const [enlil, kp, sc, kf, dayTxt, dstPred, aurora, hp30txt] = await Promise.all([
+    const [enlil, hp, kp, sc, kf, dayTxt, dstPred, aurora, hp30txt] = await Promise.all([
       hapi("solar_wind_plasma_enlil_metoffice", "density,speed,bt", hapiStart(series.enlil), stop, signal),
+      hapi("hp30_index", "Hp30", hapiStart(series.hp), stop, signal),
       settled(NOAA.kp, signal),
       settled(NOAA.scales, signal),
       settled(NOAA.kf, signal),
@@ -165,7 +163,9 @@ async function collect(kind, signal) {
       settled("./hp30.txt", signal),
     ]);
     series.enlil = mergeRows(series.enlil, enlil);
+    series.hp = mergeRows(series.hp, hp);
     if (putIfChanged(out, "enlil", series.enlil)) changed = true;
+    if (putIfChanged(out, "hp", series.hp)) changed = true;
     if (kp && putIfChanged(out, "kp", kp.data)) changed = true;
     if (sc && putIfChanged(out, "sc", sc.data)) changed = true;
     if (kf && putIfChanged(out, "kf", kf.data)) changed = true;
