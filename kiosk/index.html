@@ -43,9 +43,9 @@ td.kp-pred{opacity:.78}
 #kpForecast .g0{color:#64748b}#kpForecast .g1{color:#f5d76e}#kpForecast .g2{color:#f59e42}#kpForecast .g3{color:#fb7185}#kpForecast .g4,#kpForecast .g5{color:#f05252}
 #kpForecast .day{display:block;color:#eef3ff}#kpForecast .md{display:block;font-weight:400;color:#8b97b3;font-size:10px}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
-.swcard{grid-column:1/-1;overflow:hidden}
-#swPlot{width:100%;height:520px;display:block;border-radius:8px;background:#0b1220;max-width:100%}
-#hemiPlot{width:100%;height:240px;display:block;border-radius:8px;background:#0b1220;max-width:100%}
+.swrow{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}
+.swrow .card{min-width:0;overflow:hidden}
+#swPlot,#hemiPlot{width:100%;height:520px;display:block;border-radius:8px;background:#0b1220;max-width:100%}
 .hemilegs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .hemilegs div{display:flex;justify-content:space-between;align-items:center;background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--muted)}
 .hpbadge{display:inline-block;min-width:4.5rem;text-align:center;padding:3px 10px;border-radius:6px;font-weight:800;color:#070b12;background:#34d399}
@@ -65,8 +65,8 @@ th:first-child,td:first-child{text-align:left}
   .cols{grid-template-columns:1fr}
   .maprow{grid-template-columns:1fr}
   .kpis-4,.kpis-6{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #swPlot{height:340px}
-  #hemiPlot{height:200px}
+  #swPlot,#hemiPlot{height:340px}
+  .swrow{grid-template-columns:1fr}
   .kpi b,.dstpair b{font-size:18px}
 }
 @media(max-width:720px){
@@ -103,15 +103,6 @@ th:first-child,td:first-child{text-align:left}
     <div class="kpi"><span>Hemispheric power now N/S</span><b id="vHemi">-</b></div>
     <div class="kpi"><span>15-min average N/S</span><b id="vHemiAvg">-</b><div class="muted" id="hemiAvgNote">poll average</div></div>
   </div>
-  <div class="card" style="margin-bottom:12px">
-    <h2>Hemispheric Power</h2>
-    <canvas id="hemiPlot"></canvas>
-    <div class="hemilegs">
-      <div>Northern hemisphere <b id="hemiN" class="hpbadge">-</b></div>
-      <div>Southern hemisphere <b id="hemiS" class="hpbadge">-</b></div>
-    </div>
-    <div class="muted" style="margin-top:8px">Last 6 hours · 5-minute bars · Now = Earth · right of Now is still in transit L1→Earth</div>
-  </div>
   <div class="kpis kpis-6">
     <div class="kpi"><span>Hp30</span><b id="vHp30">-</b></div>
     <div class="kpi"><span>Kp 3hr</span><b id="vKp">-</b></div>
@@ -132,7 +123,18 @@ th:first-child,td:first-child{text-align:left}
     </div>
   </div>
   <div class="cols">
-    <div class="card swcard"><h2>Solar Wind · KNMI HAPI</h2><canvas id="swPlot"></canvas><div class="muted" id="swStatus">last 36 hours + 1h pad · hourly</div></div>
+    <div class="swrow">
+      <div class="card">
+        <h2>Hemispheric Power</h2>
+        <canvas id="hemiPlot"></canvas>
+        <div class="hemilegs">
+          <div>Northern hemisphere <b id="hemiN" class="hpbadge">-</b></div>
+          <div>Southern hemisphere <b id="hemiS" class="hpbadge">-</b></div>
+        </div>
+        <div class="muted" style="margin-top:8px">Last 6 hours · 5-minute bars · Now = Earth · right of Now is still in transit L1→Earth</div>
+      </div>
+      <div class="card"><h2>Solar Wind · KNMI HAPI</h2><canvas id="swPlot"></canvas><div class="muted" id="swStatus">last 36 hours + 1h pad · hourly</div></div>
+    </div>
     <div class="card"><h2>WSA-Enlil</h2><img id="enlil" alt="enlil"><div class="player"><button type="button" id="enlilPlay">Play</button><input id="enlilScrub" type="range" min="0" max="0" value="0"><span class="muted" id="enlilStamp"></span></div></div>
     <div class="card"><h2>WAM-IPE · TEC nowcast</h2><img id="wamIpe" alt="WAM-IPE"><div class="muted">NOAA WAM-IPE · NCEP NOMADS</div></div>
     <div class="card"><h2>Hobart BOM</h2><img id="hobart" alt="Hobart"></div>
@@ -207,7 +209,7 @@ function parseHemiSeries(txt){
 }
 function drawHemiPlot(){
   const el=document.getElementById("hemiPlot"); if(!el)return;
-  const box=el.parentElement, cssW=Math.max(260,box.clientWidth||320), cssH=(window.innerWidth<720)?200:240;
+  const box=el.parentElement, cssW=Math.max(260,box.clientWidth||320), cssH=el.clientHeight||((window.innerWidth<720)?340:520);
   const dpr=Math.min(2,window.devicePixelRatio||1);
   el.width=Math.round(cssW*dpr); el.height=Math.round(cssH*dpr);
   el.style.width="100%"; el.style.height=cssH+"px";
