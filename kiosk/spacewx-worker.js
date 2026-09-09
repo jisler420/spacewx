@@ -147,6 +147,16 @@ function fromRtswWind(arr) {
 
 const src = { mag: "", plasma: "", hp: "", dst: "", kp: "" };
 
+function putSeries(out, key, arr) {
+  if (!arr) return false;
+  const last = arr.length ? arr[arr.length - 1] : null;
+  const fp = arr.length + ":" + (last && last.t);
+  if (printCache[key] === fp) return false;
+  printCache[key] = fp;
+  out[key] = arr;
+  return true;
+}
+
 function putIfChanged(out, key, value) {
   if (value == null) return false;
   const fp = fingerprint(value);
@@ -197,8 +207,8 @@ async function collect(kind, signal) {
         if (rows.length) { dst = { data: rows }; src.dst = "ISWA"; }
       }
     } else src.dst = "Kyoto";
-    if (putIfChanged(out, "mag", series.mag)) changed = true;
-    if (putIfChanged(out, "plasma", series.plasma)) changed = true;
+    if (putSeries(out, "mag", series.mag)) changed = true;
+    if (putSeries(out, "plasma", series.plasma)) changed = true;
     if (dst && putIfChanged(out, "dst", dst.data)) changed = true;
     if (hemi && putIfChanged(out, "hemi", hemi.data)) changed = true;
   }
@@ -226,8 +236,8 @@ async function collect(kind, signal) {
         src.kp = "KNMI";
       }
     } else src.kp = "NOAA";
-    if (putIfChanged(out, "enlil", series.enlil)) changed = true;
-    if (putIfChanged(out, "hp", series.hp)) changed = true;
+    if (putSeries(out, "enlil", series.enlil)) changed = true;
+    if (putSeries(out, "hp", series.hp)) changed = true;
     if (kp && putIfChanged(out, "kp", kp.data)) changed = true;
     if (sc && putIfChanged(out, "sc", sc.data)) changed = true;
     if (kf && putIfChanged(out, "kf", kf.data)) changed = true;
