@@ -23,7 +23,7 @@ jobs:
       - name: Stage kiosk as site root
         run: |
           mkdir -p _site
-          cp kiosk/* _site/
+          cp -a kiosk/. _site/
           curl -fsSL https://kp.gfz.de/fileadmin/files_for_gfz_cms/Hp30_ap30_nowcast.txt -o _site/hp30.txt || true
       - uses: actions/upload-pages-artifact@v3
         with:
