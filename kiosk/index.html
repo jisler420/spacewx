@@ -164,7 +164,7 @@ th:first-child,td:first-child{text-align:left}
 </main>
 </div>
 <script>
-const DEFAULT={zip:"",lat:30.02449,lon:-97.9072,place:"30.02449, -97.90720",tz:"America/Chicago",pollSec:30};
+const DEFAULT={zip:"",lat:30.02449,lon:-97.9072,place:"30.02449, -97.90720",tz:"America/Chicago",pollSec:60};
 const HOURS=2.5;
 function loadCfg(){try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem("spacewx-cfg")||"{}"))}catch(e){return Object.assign({},DEFAULT)}}
 const cfg=loadCfg();
@@ -670,14 +670,14 @@ function applyWorkerData(data){
 tick();drawEarth();loadImgs();loadEnlil();
 let wxWorker=null, workerOk=false;
 try{
-  const wurl=new URL("spacewx-worker.js?v=20260909ovn", document.baseURI||location.href);
+  const wurl=new URL("spacewx-worker.js?v=20260909p60", document.baseURI||location.href);
   wxWorker=new Worker(wurl);
   wxWorker.onmessage=function(e){
     if(e.data&&e.data.type==="update"){workerOk=true;applyWorkerData(e.data.data)}
     if(e.data&&e.data.type==="error"&&e.data.fails>=3){feedStatus.textContent="partial";feedStatus.className="muted"}
   };
   wxWorker.onerror=function(){workerOk=false;wxWorker=null};
-  wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||30,hidden:document.hidden});
+  wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||60,hidden:document.hidden});
 }catch(e){wxWorker=null;workerOk=false}
 if(!wxWorker){loadWx();loadWindImf();loadHp30();loadAurora()}
 else setTimeout(function(){if(!auroraData) loadAurora()},8000);
@@ -687,13 +687,13 @@ function refreshKpis(kind){
 }
 setInterval(tick,1000);
 if(!wxWorker){
-  const sec=[30,300].indexOf(+cfg.pollSec)>=0?+cfg.pollSec:30;
+  const sec=[60,300].indexOf(+cfg.pollSec)>=0?+cfg.pollSec:60;
   const ms=sec*1000;
   setTimeout(function(){refreshKpis("fast");setInterval(function(){refreshKpis("fast")},ms)},ms-(Date.now()%ms));
 }
 setInterval(function(){loadImgs();loadEnlil();drawEarth()},300000);
 document.addEventListener("visibilitychange",function(){
-  if(wxWorker){try{wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||30,hidden:document.hidden})}catch(e){}}
+  if(wxWorker){try{wxWorker.postMessage({type:"config",pollSec:cfg.pollSec||60,hidden:document.hidden})}catch(e){}}
   if(!document.hidden) refreshKpis("all");
 });
 window.addEventListener("resize",function(){drawEarth();drawAll()});
