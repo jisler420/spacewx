@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>SpaceWx</title>
 <style>
@@ -431,7 +432,7 @@ function renderKpForecast(kf){
     const t=parseT(r.time_tag||r[0]);
     if(!isFinite(t))return;
     const d=new Date(t);
-    const kp=Number(r.kp??r.Kp??r[1]);
+    const kp=Number(r.kp!=null?r.kp:(r.Kp!=null?r.Kp:r[1]));
     by[d.toISOString().slice(0,10)+"-"+d.getUTCHours()]={kp:kp,kind:r.observed||r[2]||"",scale:r.noaa_scale||""};
   });
   const start=new Date();start.setUTCHours(0,0,0,0);
@@ -570,12 +571,20 @@ function drawHp30(){
 function drawAll(){drawWindImf();drawHemiPlot()}
 async function loadWindImf(){
   const now=new Date(),start=isoH(new Date(now.getTime()-36*3600000)),stop=isoH(new Date(now.getTime()+3600000));
-  const [mag,plasma,enlil,hp]=await Promise.all([
+  let [mag,plasma,enlil,hp]=await Promise.all([
     hapi("solar_wind_mag_rt","bt,bx_gsm,by_gsm,bz_gsm",start,stop),
     hapi("solar_wind_plasma_rt","density,speed,temperature",start,stop),
     hapi("solar_wind_plasma_enlil_metoffice","density,speed,bt",start,stop),
     hapi("hp30_index","Hp30",start,stop)
   ]);
+  if(!mag.length){
+    const fb=await settled("https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json");
+    if(Array.isArray(fb)) mag=fb.filter(function(r){return r&&r.active!==false}).map(function(r){return {t:parseT(r.time_tag),bt:+r.bt,bx_gsm:+r.bx_gsm,by_gsm:+r.by_gsm,bz_gsm:+r.bz_gsm}}).filter(function(r){return isFinite(r.t)});
+  }
+  if(!plasma.length){
+    const fb=await settled("https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json");
+    if(Array.isArray(fb)) plasma=fb.filter(function(r){return r&&r.active!==false}).map(function(r){return {t:parseT(r.time_tag),density:+r.proton_density,speed:+r.proton_speed,temperature:+r.proton_temperature}}).filter(function(r){return isFinite(r.t)});
+  }
   hapiPack.mag=mag;hapiPack.plasma=plasma;hapiPack.enlil=enlil;hapiPack.hp=hp;
   drawWindImf();drawHp30();
   markUpdated();
@@ -599,6 +608,9 @@ async function loadWx(){
   if(Array.isArray(dst)||Array.isArray(dstPred)) drawDst();
   if(hemi) applyHemi(hemi);
   drawSw();
+  const ok=[kp,sc,kf,dst,hemi].filter(Boolean).length;
+  feedStatus.textContent=ok>=4?"live":ok?"partial":"retrying";
+  feedStatus.className=ok>=4?"ok":"muted";
 }
 async function loadHp30(){
   const txt=await settled("./hp30.txt");
@@ -809,7 +821,7 @@ function refreshKpis(kind){
   startFallback();
 }
 spawnWorker();
-setTimeout(function(){ if(!workerOk) startFallback(); }, 4000);
+startFallback();
 setInterval(function(){
   const age=Date.now()-lastPulse;
   if(age>25000){
