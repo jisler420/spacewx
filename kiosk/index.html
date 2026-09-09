@@ -661,7 +661,7 @@ function applyWorkerData(data){
 tick();drawEarth();loadImgs();loadEnlil();
 let wxWorker=null, workerOk=false;
 try{
-  const wurl=new URL("spacewx-worker.js?v=20260909opt", document.baseURI||location.href);
+  const wurl=new URL("spacewx-worker.js?v=20260909hp5", document.baseURI||location.href);
   wxWorker=new Worker(wurl);
   wxWorker.onmessage=function(e){
     if(e.data&&e.data.type==="update"){workerOk=true;applyWorkerData(e.data.data)}
